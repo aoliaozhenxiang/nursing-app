@@ -602,12 +602,12 @@
                 <h4>排序记忆</h4>
                 <span>将护理步骤排序</span>
             </div>
-            <div class="game-card" onclick="alert('游戏2被点击'); startGame('match')">
+            <div class="game-card" onclick="startGame('match')">
                 <i class="fas fa-link"></i>
                 <h4>连连看 <span class="badge">NEW</span></h4>
                 <span>匹配相关知识点</span>
             </div>
-            <div class="game-card" onclick="alert('游戏3被点击'); startGame('quiz')">
+            <div class="game-card" onclick="startGame('quiz')">
                 <i class="fas fa-bolt"></i>
                 <h4>速答挑战 <span class="badge">NEW</span></h4>
                 <span>限时答题</span>
@@ -1270,129 +1270,123 @@
     });
 
     // 闯关游戏
-    // ==================== 游戏功能 ====================
     let currentGame = '';
     let score = 0;
 
     function startGame(type) {
-        // 隐藏所有页面
-        ['mainPage', 'theoryPage', 'practicePage', 'examPage', 'aiPage', 'profilePage'].forEach(id => {
-            document.getElementById(id).style.display = 'none';
-        });
-        // 显示游戏页
+        document.getElementById('mainPage').style.display = 'none';
         document.getElementById('gamePage').style.display = 'block';
-        // 隐藏所有游戏
         document.getElementById('sortGame').style.display = 'none';
         document.getElementById('matchGame').style.display = 'none';
         document.getElementById('quizGame').style.display = 'none';
 
         if (type === 'sort') {
             currentGame = 'sort';
+            score = 0;
             document.getElementById('gameTitle').textContent = '排序记忆';
             document.getElementById('gameSubtitle').textContent = '护理步骤排序';
             document.getElementById('sortGame').style.display = 'block';
             initSortGame();
         } else if (type === 'match') {
             currentGame = 'match';
+            score = 0;
             document.getElementById('gameTitle').textContent = '连连看';
-            document.getElementById('gameSubtitle').textContent = '知识点匹配';
+            document.getElementById('gameSubtitle').textContent = '匹配相关知识点';
             document.getElementById('matchGame').style.display = 'block';
             initMatchGame();
         } else if (type === 'quiz') {
             currentGame = 'quiz';
+            score = 0;
             document.getElementById('gameTitle').textContent = '速答挑战';
             document.getElementById('gameSubtitle').textContent = '限时答题';
             document.getElementById('quizGame').style.display = 'block';
             initQuizGame();
         }
-        window.scrollTo(0, 0);
+    }
+
+    function closeGame() {
+        document.getElementById('gamePage').style.display = 'none';
+        document.getElementById('mainPage').style.display = 'block';
+        if (currentGame === 'quiz' && quizTimer) clearInterval(quizTimer);
     }
 
     // 排序游戏
     const sortQuestions = [
-        { items: ['评估老人状况', '准备口腔护理用物', '协助老人漱口', '按顺序擦拭口腔', '整理用物记录'], answer: [0,1,2,3,4] }
+        { text: ['评估老人情况', '准备用物', '解释操作目的', '协助老人翻身', '观察皮肤情况'], answer: 0 }
     ];
-    let currentSortQuestion = 0;
-    let sortUserAnswer = [];
-    let selectedSortIdx = null;
+    let sortItems = [];
+    let sortSelected = [];
 
     function initSortGame() {
-        const q = sortQuestions[0];
-        // 随机排列
-        sortUserAnswer = [0,1,2,3,4].sort(() => Math.random() - 0.5);
-        const container = document.getElementById('sortItems');
-        container.innerHTML = '';
-        sortUserAnswer.forEach((idx, i) => {
-            const item = document.createElement('div');
-            item.className = 'chapter-item';
-            item.style.cursor = 'pointer';
-            item.style.display = 'flex';
-            item.style.alignItems = 'center';
-            item.innerHTML = '<span style="background:#2a9d8f;color:white;padding:4px 10px;border-radius:8px;margin-right:10px;">' + (i+1) + '</span>' + q.items[idx];
-            item.onclick = () => moveSortItem(i);
-            item.dataset.idx = i;
-            item.dataset.original = idx;
-            container.appendChild(item);
-        });
-        document.getElementById('sortResult').style.display = 'none';
+        sortItems = [...sortQuestions[0].text];
+        sortSelected = [];
+        shuffle(sortItems);
+        renderSortItems();
+        document.getElementById('sortResult').textContent = '';
     }
 
-    function moveSortItem(idx) {
-        const items = document.querySelectorAll('#sortItems .chapter-item');
-        if (selectedSortIdx === null) {
-            selectedSortIdx = idx;
-            items[idx].style.background = '#e8f8f5';
-            items[idx].style.border = '2px solid #2a9d8f';
+    function renderSortItems() {
+        const grid = document.getElementById('sortGrid');
+        grid.innerHTML = '';
+        sortItems.forEach((item, i) => {
+            const div = document.createElement('div');
+            div.className = 'chapter-item';
+            div.style.cursor = 'pointer';
+            div.style.transition = 'all 0.2s';
+            div.textContent = item;
+            div.dataset.idx = i;
+            div.onclick = () => selectSortItem(i);
+            grid.appendChild(div);
+        });
+    }
+
+    function selectSortItem(idx) {
+        if (sortSelected.length === 0) {
+            sortSelected.push(idx);
+            const grid = document.getElementById('sortGrid');
+            grid.children[idx].style.background = '#e8f8f5';
+            grid.children[idx].style.border = '2px solid #2a9d8f';
         } else {
-            // 交换
-            const temp = sortUserAnswer[idx];
-            sortUserAnswer[idx] = sortUserAnswer[selectedSortIdx];
-            sortUserAnswer[selectedSortIdx] = temp;
-            selectedSortIdx = null;
-            initSortGame();
+            const [prev] = sortSelected;
+            [sortItems[prev], sortItems[idx]] = [sortItems[idx], sortItems[prev]];
+            sortSelected = [];
+            renderSortItems();
+            checkSortAnswer();
         }
     }
 
     function checkSortAnswer() {
-        const q = sortQuestions[0];
-        const correct = JSON.stringify(sortUserAnswer) === JSON.stringify(q.answer);
-        const resultDiv = document.getElementById('sortResult');
-        resultDiv.style.display = 'block';
+        const correct = sortItems.every((item, i) => item === sortQuestions[0].text[i]);
+        const result = document.getElementById('sortResult');
         if (correct) {
-            resultDiv.style.background = '#d4edda';
-            resultDiv.style.color = '#155724';
-            resultDiv.innerHTML = '<i class="fas fa-check-circle"></i> 正确！+10分';
-            score += 10;
+            result.innerHTML = '<span style="color:#2a9d8f;font-weight:bold">正确！步骤正确</span>';
+            score += 20;
             document.getElementById('gameScore').textContent = score;
         } else {
-            resultDiv.style.background = '#f8d7da';
-            resultDiv.style.color = '#721c24';
-            resultDiv.innerHTML = '<i class="fas fa-times-circle"></i> 错误，正确顺序：' + q.items.join(' → ');
+            result.innerHTML = '<span style="color:#e76f51">顺序不对，再试试！</span>';
         }
     }
 
     // 连连看游戏
-    const matchPairs = [
-        { left: '压疮', right: '减压翻身' },
-        { left: '鼻饲', right: '半卧位' },
-        { left: '噎食', right: '海姆立克' },
-        { left: '发热', right: '物理降温' }
-    ];
     let matchCards = [];
     let selectedCards = [];
     let matchCount = 0;
 
     function initMatchGame() {
-        matchCards = [];
-        matchCount = 0;
+        matchCards = [
+            { text: '床上洗头', pair: 1, type: 'left', matched: false },
+            { text: '水温40℃', pair: 1, type: 'right', matched: false },
+            { text: '口腔护理', pair: 2, type: 'left', matched: false },
+            { text: '棉球擦拭', pair: 2, type: 'right', matched: false },
+            { text: '翻身拍背', pair: 3, type: 'left', matched: false },
+            { text: '每2小时', pair: 3, type: 'right', matched: false },
+            { text: '鼻饲喂食', pair: 4, type: 'left', matched: false },
+            { text: '半卧位', pair: 4, type: 'right', matched: false }
+        ];
         selectedCards = [];
-        matchPairs.forEach((p, i) => {
-            matchCards.push({ id: i*2, text: p.left, pair: i, type: 'left', matched: false });
-            matchCards.push({ id: i*2+1, text: p.right, pair: i, type: 'right', matched: false });
-        });
-        matchCards.sort(() => Math.random() - 0.5);
+        matchCount = 0;
+        shuffle(matchCards);
         renderMatchCards();
-        document.getElementById('matchRemaining').textContent = '8';
     }
 
     function renderMatchCards() {
@@ -1432,11 +1426,10 @@
                 matchCards[i1].matched = true;
                 matchCards[i2].matched = true;
                 matchCount++;
-                document.getElementById('matchRemaining').textContent = 8 - matchCount;
                 if (matchCount === 4) {
                     score += 20;
                     document.getElementById('gameScore').textContent = score;
-                    alert('恭喜通关！得分 +20');
+                    alert('🎉 恭喜通关！得分 +20');
                 }
             }
             setTimeout(() => {
@@ -1506,34 +1499,12 @@
         setTimeout(showQuizQuestion, 500);
     }
 
-        if (selectedCards.length === 2) {
-            const [a, b] = selectedCards;
-            if (matchCards[a].pair === matchCards[b].pair && matchCards[a].type !== matchCards[b].type) {
-                matchCards[a].matched = true;
-                matchCards[b].matched = true;
-                matchCount++;
-                document.getElementById('matchRemaining').textContent = 8 - matchCount * 2;
-                score += 10;
-                document.getElementById('gameScore').textContent = score;
-                setTimeout(() => {
-                    selectedCards = [];
-                    renderMatchCards();
-                    if (matchCount === 4) {
-                        alert('🎉 恭喜通关！得分: ' + score);
-                    }
-                }, 500);
-            } else {
-                setTimeout(() => {
-                    selectedCards = [];
-                    renderMatchCards();
-                }, 800);
-            }
+    function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
         }
     }
-
-
-
 </script>
-
 </body>
 </html>
