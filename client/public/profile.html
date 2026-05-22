@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的 - 慈航护理学堂</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f5fcf9; color: #1a2f2a; }
+        .container { max-width: 1280px; margin: 0 auto; padding: 0 28px; }
+        .header { background: linear-gradient(135deg, #1b4332, #2a9d8f); color: white; padding: 20px 0; position: sticky; top: 0; z-index: 100; }
+        .header h1 { font-size: 1.4rem; }
+        .header h1 i { margin-right: 10px; }
+        .card { background: white; border-radius: 20px; padding: 20px; margin: 16px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .profile-header { display: flex; align-items: center; gap: 16px; }
+        .avatar { width: 70px; height: 70px; background: linear-gradient(135deg, #2a9d8f, #1e6f62); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; }
+        .profile-info h3 { font-size: 1.2rem; }
+        .profile-info p { color: #6a8a81; font-size: 0.9rem; margin-top: 4px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; }
+        .stat-item { text-align: center; background: #f8fafa; padding: 12px 8px; border-radius: 12px; }
+        .stat-num { font-size: 1.3rem; font-weight: 700; color: #2a9d8f; }
+        .stat-label { font-size: 0.75rem; color: #6a8a81; margin-top: 4px; }
+        .badge-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+        .badge { background: linear-gradient(135deg, #ffd700, #ffb347); padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; }
+        .badge i { font-size: 1rem; }
+        .menu-list { display: flex; flex-direction: column; gap: 8px; }
+        .menu-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #f0f5f3; cursor: pointer; }
+        .menu-item:last-child { border-bottom: none; }
+        .menu-left { display: flex; align-items: center; gap: 12px; }
+        .menu-icon { width: 36px; height: 36px; background: #e8f5f2; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #2a9d8f; }
+        .menu-text { font-weight: 500; }
+        .menu-arrow { color: #c8e6df; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 12px 0; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); z-index: 100; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #6a8a81; text-decoration: none; font-size: 0.75rem; }
+        .nav-item.active { color: #2a9d8f; }
+        .nav-item i { font-size: 1.4rem; }
+        body { padding-bottom: 70px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1><i class="fas fa-user"></i> 个人中心</h1>
+        </div>
+    </div>
+
+    <div class="container" style="margin-top: 20px;">
+        <div class="card">
+            <div class="profile-header">
+                <div class="avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="profile-info">
+                    <h3>护理学员</h3>
+                    <p>四级/中级工 · 学习中</p>
+                </div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-num">12h</div>
+                    <div class="stat-label">学习时长</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num">128</div>
+                    <div class="stat-label">刷题数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num">85%</div>
+                    <div class="stat-label">正确率</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num">3</div>
+                    <div class="stat-label">徽章</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3><i class="fas fa-trophy" style="color:#ffd700"></i> 成就徽章</h3>
+            <div class="badge-grid">
+                <div class="badge"><i class="fas fa-star"></i> 初学者</div>
+                <div class="badge"><i class="fas fa-fire"></i> 连续学习7天</div>
+                <div class="badge"><i class="fas fa-brain"></i> 答题达人</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3><i class="fas fa-list" style="color:#2a9d8f"></i> 功能菜单</h3>
+            <div class="menu-list" style="margin-top:12px;">
+                <div class="menu-item">
+                    <div class="menu-left">
+                        <div class="menu-icon"><i class="fas fa-book"></i></div>
+                        <div class="menu-text">学习记录</div>
+                    </div>
+                    <i class="fas fa-chevron-right menu-arrow"></i>
+                </div>
+                <div class="menu-item">
+                    <div class="menu-left">
+                        <div class="menu-icon"><i class="fas fa-bookmark"></i></div>
+                        <div class="menu-text">我的收藏</div>
+                    </div>
+                    <i class="fas fa-chevron-right menu-arrow"></i>
+                </div>
+                <div class="menu-item">
+                    <div class="menu-left">
+                        <div class="menu-icon"><i class="fas fa错题本"></i></div>
+                        <div class="menu-text">错题本</div>
+                    </div>
+                    <i class="fas fa-chevron-right menu-arrow"></i>
+                </div>
+                <div class="menu-item">
+                    <div class="menu-left">
+                        <div class="menu-icon"><i class="fas fa-bell"></i></div>
+                        <div class="menu-text">学习提醒</div>
+                    </div>
+                    <i class="fas fa-chevron-right menu-arrow"></i>
+                </div>
+                <div class="menu-item">
+                    <div class="menu-left">
+                        <div class="menu-icon"><i class="fas fa-cog"></i></div>
+                        <div class="menu-text">设置</div>
+                    </div>
+                    <i class="fas fa-chevron-right menu-arrow"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a class="nav-item" href="index.html">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </a>
+        <a class="nav-item" href="theory.html">
+            <i class="fas fa-book-open"></i>
+            <span>理论</span>
+        </a>
+        <a class="nav-item" href="practice.html">
+            <i class="fas fa-hands"></i>
+            <span>实操</span>
+        </a>
+        <a class="nav-item" href="exam.html">
+            <i class="fas fa-pen"></i>
+            <span>刷题</span>
+        </a>
+        <a class="nav-item active" href="profile.html">
+            <i class="fas fa-user"></i>
+            <span>我的</span>
+        </a>
+    </div>
+</body>
+</html>

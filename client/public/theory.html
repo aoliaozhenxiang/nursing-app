@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>理论学习 - 慈航护理学堂</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f5fcf9; color: #1a2f2a; }
+        .container { max-width: 1280px; margin: 0 auto; padding: 0 28px; }
+        .header { background: linear-gradient(135deg, #1b4332, #2a9d8f); color: white; padding: 20px 0; position: sticky; top: 0; z-index: 100; }
+        .header h1 { font-size: 1.4rem; }
+        .header h1 i { margin-right: 10px; }
+        .back-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 16px; border-radius: 20px; cursor: pointer; margin-bottom: 10px; }
+        .back-btn:hover { background: rgba(255,255,255,0.3); }
+        .card { background: white; border-radius: 20px; padding: 20px; margin: 16px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .chapter-list { display: flex; flex-direction: column; gap: 12px; }
+        .chapter-item { background: #f8fafa; border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: 0.2s; }
+        .chapter-item:hover { background: #e8f5f2; transform: translateX(5px); }
+        .chapter-num { width: 40px; height: 40px; background: linear-gradient(135deg, #2a9d8f, #1e6f62); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .chapter-info { flex: 1; }
+        .chapter-info h4 { font-size: 1rem; margin-bottom: 4px; }
+        .chapter-info span { font-size: 0.85rem; color: #6a8a81; }
+        .chapter-arrow { color: #2a9d8f; }
+        .tabs { display: flex; gap: 8px; margin: 16px 0; flex-wrap: wrap; }
+        .tab { padding: 10px 20px; border-radius: 25px; border: none; background: #e8f5f2; color: #2a9d8f; cursor: pointer; font-weight: 500; transition: 0.2s; }
+        .tab.active { background: #2a9d8f; color: white; }
+        .content-box { background: white; border-radius: 16px; padding: 20px; min-height: 200px; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 12px 0; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); z-index: 100; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #6a8a81; text-decoration: none; font-size: 0.75rem; cursor: pointer; }
+        .nav-item.active { color: #2a9d8f; }
+        .nav-item i { font-size: 1.4rem; }
+        body { padding-bottom: 70px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <button class="back-btn" onclick="location.href='index.html'">
+                <i class="fas fa-arrow-left"></i> 返回首页
+            </button>
+            <h1><i class="fas fa-book-open"></i> 理论学习</h1>
+        </div>
+    </div>
+
+    <div class="container" style="margin-top: 20px;">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(this, 'video')">视频教学</button>
+            <button class="tab" onclick="switchTab(this, 'ppt')">PPT课件</button>
+            <button class="tab" onclick="switchTab(this, 'text')">图文知识</button>
+        </div>
+
+        <div class="content-box" id="videoContent">
+            <h3><i class="fas fa-play-circle" style="color:#2a9d8f"></i> 视频教学</h3>
+            <p style="margin-top:12px;color:#6a8a81;">暂无视频，请上传课件后显示</p>
+            <div style="margin-top:20px;background:#f8fafa;padding:20px;border-radius:12px;text-align:center;">
+                <i class="fas fa-video" style="font-size:3rem;color:#c8e6df;margin-bottom:10px;"></i>
+                <p style="color:#6a8a81;">视频教程区域</p>
+                <p style="color:#aaa;font-size:0.85rem;margin-top:8px;">支持上传MP4格式教学视频</p>
+            </div>
+        </div>
+
+        <div class="content-box" id="pptContent" style="display:none;">
+            <h3><i class="fas fa-file-powerpoint" style="color:#e76f51"></i> PPT课件</h3>
+            <div class="chapter-list" style="margin-top:16px;">
+                <div class="chapter-item">
+                    <i class="fas fa-file-powerpoint" style="color:#e76f51;font-size:1.5rem;"></i>
+                    <div class="chapter-info">
+                        <h4>第一章 职业道德与法律法规</h4>
+                        <span>PPT · 15页</span>
+                    </div>
+                    <i class="fas fa-download chapter-arrow"></i>
+                </div>
+                <div class="chapter-item">
+                    <i class="fas fa-file-powerpoint" style="color:#e76f51;font-size:1.5rem;"></i>
+                    <div class="chapter-info">
+                        <h4>第二章 老年人生理特点与心理</h4>
+                        <span>PPT · 22页</span>
+                    </div>
+                    <i class="fas fa-download chapter-arrow"></i>
+                </div>
+                <div class="chapter-item">
+                    <i class="fas fa-file-powerpoint" style="color:#e76f51;font-size:1.5rem;"></i>
+                    <div class="chapter-info">
+                        <h4>第三章 生活照护技术</h4>
+                        <span>PPT · 30页</span>
+                    </div>
+                    <i class="fas fa-download chapter-arrow"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-box" id="textContent" style="display:none;">
+            <h3><i class="fas fa-book" style="color:#2a9d8f"></i> 图文知识</h3>
+            <div class="chapter-list" style="margin-top:16px;">
+                <div class="chapter-item" onclick="location.href='chapter.html?id=1'">
+                    <div class="chapter-num">1</div>
+                    <div class="chapter-info">
+                        <h4>职业道德与职业守则</h4>
+                        <span>职业道德、礼仪规范、法律意识</span>
+                    </div>
+                    <i class="fas fa-chevron-right chapter-arrow"></i>
+                </div>
+                <div class="chapter-item" onclick="location.href='chapter.html?id=2'">
+                    <div class="chapter-num">2</div>
+                    <div class="chapter-info">
+                        <h4>老年人生理特点</h4>
+                        <span>生理变化、功能衰退、常见疾病</span>
+                    </div>
+                    <i class="fas fa-chevron-right chapter-arrow"></i>
+                </div>
+                <div class="chapter-item" onclick="location.href='chapter.html?id=3'">
+                    <div class="chapter-num">3</div>
+                    <div class="chapter-info">
+                        <h4>老年人心理与沟通</h4>
+                        <span>心理特点、情绪管理、沟通技巧</span>
+                    </div>
+                    <i class="fas fa-chevron-right chapter-arrow"></i>
+                </div>
+                <div class="chapter-item" onclick="location.href='chapter.html?id=4'">
+                    <div class="chapter-num">4</div>
+                    <div class="chapter-info">
+                        <h4>安全防护与应急处理</h4>
+                        <span>安全评估、防护措施、急救知识</span>
+                    </div>
+                    <i class="fas fa-chevron-right chapter-arrow"></i>
+                </div>
+                <div class="chapter-item" onclick="location.href='chapter.html?id=5'">
+                    <div class="chapter-num">5</div>
+                    <div class="chapter-info">
+                        <h4>生活照护</h4>
+                        <span>清洁照护、饮食照护、排泄照护</span>
+                    </div>
+                    <i class="fas fa-chevron-right chapter-arrow"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3><i class="fas fa-graduation-cap" style="color:#2a9d8f"></i> 学习进度</h3>
+            <div style="margin-top:12px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                    <span>总体进度</span><span style="color:#2a9d8f;font-weight:600;">35%</span>
+                </div>
+                <div style="background:#e8f5f2;height:12px;border-radius:6px;overflow:hidden;">
+                    <div style="background:linear-gradient(90deg,#2a9d8f,#1e6f62);height:100%;width:35%;border-radius:6px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a class="nav-item" href="index.html">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </a>
+        <a class="nav-item active" href="theory.html">
+            <i class="fas fa-book-open"></i>
+            <span>理论</span>
+        </a>
+        <a class="nav-item" href="practice.html">
+            <i class="fas fa-hands"></i>
+            <span>实操</span>
+        </a>
+        <a class="nav-item" href="exam.html">
+            <i class="fas fa-pen"></i>
+            <span>刷题</span>
+        </a>
+        <a class="nav-item" href="profile.html">
+            <i class="fas fa-user"></i>
+            <span>我的</span>
+        </a>
+    </div>
+
+    <script>
+        function switchTab(el, type) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('videoContent').style.display = type === 'video' ? 'block' : 'none';
+            document.getElementById('pptContent').style.display = type === 'ppt' ? 'block' : 'none';
+            document.getElementById('textContent').style.display = type === 'text' ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>
