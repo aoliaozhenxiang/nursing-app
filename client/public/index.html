@@ -328,6 +328,11 @@
             padding: 18px;
             text-align: center;
             cursor: pointer;
+            pointer-events: auto;
+            user-select: none;
+            -webkit-user-select: none;
+            position: relative;
+            z-index: 10;
             transition: 0.2s;
             border: 1px solid #d4ebe5;
         }
@@ -592,17 +597,17 @@
     <div class="card">
         <h3><i class="fas fa-gamepad"></i> 闯关记忆游戏</h3>
         <div class="game-grid">
-            <div class="game-card" onclick="startGame('sort')">
+            <div class="game-card" onclick="alert('游戏1被点击'); startGame('sort')">
                 <i class="fas fa-sort-numeric-up"></i>
                 <h4>排序记忆</h4>
                 <span>将护理步骤排序</span>
             </div>
-            <div class="game-card" onclick="startGame('match')">
+            <div class="game-card" onclick="alert('游戏2被点击'); startGame('match')">
                 <i class="fas fa-link"></i>
                 <h4>连连看 <span class="badge">NEW</span></h4>
                 <span>匹配相关知识点</span>
             </div>
-            <div class="game-card" onclick="startGame('quiz')">
+            <div class="game-card" onclick="alert('游戏3被点击'); startGame('quiz')">
                 <i class="fas fa-bolt"></i>
                 <h4>速答挑战 <span class="badge">NEW</span></h4>
                 <span>限时答题</span>
