@@ -384,6 +384,7 @@
 
         /* 页面内容留白 */
         .page-content { padding-bottom: 80px; }
+        .page-content[style*="display: none"] { display: none !important; }
 
         /* Tab切换 */
         .tab-bar {
@@ -1283,7 +1284,7 @@
 
     // 排序游戏
     const sortQuestions = [
-        { text: ['评估老人情况', '准备用物', '解释操作目的', '协助老人翻身', '观察皮肤情况'], answer: 0 }
+        { text: ['评估老人情况', '准备用物', '解释操作目的', '协助老人卧位', '清洁口腔观察'], answer: 0 }
     ];
     let sortItems = [];
     let sortSelected = [];
