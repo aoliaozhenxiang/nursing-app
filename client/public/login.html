@@ -277,7 +277,7 @@
             }
         }
         
-        async function handleRegister(e) { alert('注册函数被调用');
+        const API_URL = 'http://localhost:9091/api/v1'; async function handleRegister(e) { alert('注册函数被调用'); console.log('发送请求到:', API_URL + '/auth/register');
             e.preventDefault();
             const btn = document.getElementById('registerBtn');
             btn.disabled = true;
