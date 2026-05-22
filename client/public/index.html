@@ -1131,6 +1131,123 @@
 </div>
 
 <script>
+
+    // 数据库API配置
+    const API_BASE = 'http://8.136.210.255:9091/api/v1';
+
+    // 工具函数：获取当前用户ID
+    function getUserId() {
+        const user = localStorage.getItem('user');
+        if (!user) return null;
+        try {
+            return JSON.parse(user).id;
+        } catch {
+            return null;
+        }
+    }
+
+    // 检查登录状态
+    function checkAuth() {
+        const token = localStorage.getItem('token');
+        const user = localStorage.getItem('user');
+        if (!token || !user) {
+            window.location.href = 'login.html';
+            return false;
+        }
+        return true;
+    }
+
+    // 更新用户界面
+    async function updateUserUI() {
+        const user = localStorage.getItem('user');
+        if (!user) return;
+        try {
+            const userData = JSON.parse(user);
+            document.getElementById('userName').textContent = userData.nickname || userData.username;
+        } catch {}
+        
+        // 加载用户统计数据
+        await loadUserStats();
+    }
+
+    // 加载用户统计数据
+    async function loadUserStats() {
+        const userId = getUserId();
+        if (!userId) return;
+        
+        try {
+            // 获取进度
+            const progressRes = await fetch(`${API_BASE}/progress/${userId}`);
+            if (progressRes.ok) {
+                const progressData = await progressRes.json();
+                document.getElementById('totalProgress').textContent = progressData.total || 0;
+                document.getElementById('completedProgress').textContent = progressData.completed || 0;
+            }
+            
+            // 获取错题数
+            const wrongRes = await fetch(`${API_BASE}/wrong-questions/${userId}`);
+            if (wrongRes.ok) {
+                const wrongData = await wrongRes.json();
+                document.getElementById('wrongCount').textContent = wrongData.count || 0;
+            }
+        } catch (e) {
+            console.log('加载用户统计失败:', e);
+        }
+    }
+
+    // 保存学习进度
+    async function saveProgress(module, itemId, itemType, status, score) {
+        const userId = getUserId();
+        if (!userId) return;
+        
+        try {
+            await fetch(`${API_BASE}/progress`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId,
+                    module,
+                    itemId,
+                    itemType,
+                    status,
+                    score
+                })
+            });
+        } catch (e) {
+            console.log('保存进度失败:', e);
+        }
+    }
+
+    // 添加错题
+    async function addWrongQuestion(questionId, questionText, yourAnswer, correctAnswer, module) {
+        const userId = getUserId();
+        if (!userId) return;
+        
+        try {
+            await fetch(`${API_BASE}/wrong-questions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId,
+                    questionId,
+                    questionText,
+                    yourAnswer,
+                    correctAnswer,
+                    module
+                })
+            });
+        } catch (e) {
+            console.log('添加错题失败:', e);
+        }
+    }
+
+    // 页面加载时检查登录
+    window.addEventListener('DOMContentLoaded', function() {
+        if (checkAuth()) {
+            updateUserUI();
+        }
+    });
+
     // 页面切换
     function showSection(section) {
         const pages = ['mainPage', 'theoryPage', 'practicePage', 'examPage', 'aiPage', 'profilePage', 'gamePage'];

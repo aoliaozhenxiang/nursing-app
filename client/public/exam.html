@@ -156,3 +156,65 @@
     </div>
 </body>
 </html>
+
+<script>
+const API_BASE = 'http://8.136.210.255:9091/api/v1';
+
+// 检查登录状态
+function checkAuth() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        location.href = 'login.html';
+        return null;
+    }
+    return token;
+}
+
+// 获取用户学习统计
+async function loadStats() {
+    const token = checkAuth();
+    if (!token) return;
+    
+    try {
+        const res = await fetch(API_BASE + '/progress/stats', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        
+        document.querySelector('.stat-num').textContent = data.totalQuestions || 0;
+        document.querySelectorAll('.stat-box .stat-num')[1].textContent = data.correctRate ? Math.round(data.correctRate) + '%' : '0%';
+        document.querySelectorAll('.stat-box .stat-num')[2].textContent = data.wrongCount || 0;
+    } catch (err) {
+        console.error('加载统计失败:', err);
+    }
+}
+
+// 获取错题列表
+async function loadWrongQuestions() {
+    const token = checkAuth();
+    if (!token) return;
+    
+    try {
+        const res = await fetch(API_BASE + '/wrong-questions', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        
+        const wrongList = document.getElementById('wrongList');
+        if (wrongList && data.wrong_questions) {
+            wrongList.innerHTML = data.wrong_questions.slice(0, 5).map(q => 
+                '<div style="background:#fff3e0;padding:12px 16px;border-radius:12px;margin-bottom:8px;">' +
+                '<span>' + (q.question_text || '错题') + '</span>' +
+                '<span style="background:#e76f51;color:white;padding:4px 10px;border-radius:12px;font-size:0.8rem;">错误' + q.times_wrong + '次</span></div>'
+            ).join('');
+        }
+    } catch (err) {
+        console.error('加载错题失败:', err);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+    loadWrongQuestions();
+});
+</script>

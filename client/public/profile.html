@@ -150,5 +150,56 @@
             <span>我的</span>
         </a>
     </div>
+
+<script>
+const API_BASE = 'http://8.136.210.255:9091/api/v1';
+
+// 检查登录状态并显示用户信息
+function loadUserInfo() {
+    const userStr = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        location.href = 'login.html';
+        return;
+    }
+    
+    if (userStr) {
+        const user = JSON.parse(userStr);
+        document.getElementById('username').textContent = user.username || '未设置';
+        document.getElementById('nickname').textContent = user.nickname || user.username || '未设置';
+    }
+    
+    loadStats();
+}
+
+// 获取用户统计
+async function loadStats() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const res = await fetch(API_BASE + '/progress/stats', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        
+        document.getElementById('totalTime').textContent = (data.totalTime || 0) + '分钟';
+        document.getElementById('correctRate').textContent = data.correctRate ? Math.round(data.correctRate) + '%' : '0%';
+        document.getElementById('rank').textContent = '#' + (data.rank || '--');
+    } catch (err) {
+        console.error('加载统计失败:', err);
+    }
+}
+
+// 退出登录
+function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    location.href = 'login.html';
+}
+
+document.addEventListener('DOMContentLoaded', loadUserInfo);
+</script>
 </body>
 </html>

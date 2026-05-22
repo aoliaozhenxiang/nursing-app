@@ -1,111 +1,196 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import { Pool } from 'pg';
 
-const DATA_DIR = '/tmp/nursing_app_data';
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const PROGRESS_FILE = path.join(DATA_DIR, 'progress.json');
-const WRONG_FILE = path.join(DATA_DIR, 'wrong.json');
-const FAVORITES_FILE = path.join(DATA_DIR, 'favorites.json');
-const ACHIEVEMENTS_FILE = path.join(DATA_DIR, 'achievements.json');
-
-// 确保数据目录存在
-if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-// 初始化文件
-[USERS_FILE, PROGRESS_FILE, WRONG_FILE, FAVORITES_FILE, ACHIEVEMENTS_FILE].forEach(file => {
-    if (!fs.existsSync(file)) {
-        fs.writeFileSync(file, '[]', 'utf-8');
-    }
+// PostgreSQL 连接配置
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  database: process.env.DB_NAME || 'postgres',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || '',
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
-// 通用读写函数
-function readData(file: string): any[] {
-    try {
-        const content = fs.readFileSync(file, 'utf-8');
-        return JSON.parse(content);
-    } catch {
-        return [];
-    }
+// 测试连接
+pool.on('connect', () => {
+  console.log('✅ PostgreSQL 数据库连接成功');
+});
+
+pool.on('error', (err) => {
+  console.error('❌ PostgreSQL 连接错误:', err);
+});
+
+// 通用查询函数
+export async function query(text: string, params?: any[]) {
+  const start = Date.now();
+  const res = await pool.query(text, params);
+  const duration = Date.now() - start;
+  console.log('查询执行时间:', duration + 'ms', { rows: res.rowCount });
+  return res;
 }
 
-function writeData(file: string, data: any[]): void {
-    fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
-}
+// 用户相关
+export const userDb = {
+  // 创建用户
+  async create(username: string, password: string, nickname?: string) {
+    const result = await query(
+      'INSERT INTO users (username, password, nickname) VALUES ($1, $2, $3) RETURNING *',
+      [username, password, nickname || username]
+    );
+    return result.rows[0];
+  },
 
-// 用户操作
-export const findUserByUsername = (username: string) => {
-    const users = readData(USERS_FILE);
-    return users.find(u => u.username === username);
-};
+  // 根据用户名查找
+  async findByUsername(username: string) {
+    const result = await query(
+      'SELECT * FROM users WHERE username = $1',
+      [username]
+    );
+    return result.rows[0];
+  },
 
-export const createUser = (user: any) => {
-    const users = readData(USERS_FILE);
-    users.push(user);
-    writeData(USERS_FILE, users);
-    return user;
-};
-
-export const updateUser = (id: number, updates: any) => {
-    const users = readData(USERS_FILE);
-    const index = users.findIndex(u => u.id === id);
-    if (index !== -1) {
-        users[index] = { ...users[index], ...updates };
-        writeData(USERS_FILE, users);
-        return users[index];
-    }
-    return null;
-};
-
-// 学习进度操作
-export const getProgress = (userId: number) => readData(PROGRESS_FILE).filter(p => p.user_id === userId);
-export const saveProgress = (progress: any) => {
-    const data = readData(PROGRESS_FILE);
-    const index = data.findIndex(p => p.user_id === progress.user_id && p.chapter_id === progress.chapter_id);
-    if (index !== -1) {
-        data[index] = progress;
-    } else {
-        data.push(progress);
-    }
-    writeData(PROGRESS_FILE, data);
+  // 根据ID查找
+  async findById(id: number) {
+    const result = await query(
+      'SELECT id, username, nickname, created_at FROM users WHERE id = $1',
+      [id]
+    );
+    return result.rows[0];
+  },
 };
 
-// 错题本操作
-export const getWrongQuestions = (userId: number) => readData(WRONG_FILE).filter(w => w.user_id === userId);
-export const addWrongQuestion = (q: any) => {
-    const data = readData(WRONG_FILE);
-    const exist = data.find(w => w.user_id === q.user_id && w.question_id === q.question_id);
-    if (exist) {
-        exist.wrong_count++;
-    } else {
-        data.push(q);
-    }
-    writeData(WRONG_FILE, data);
+// 学习进度相关
+export const progressDb = {
+  // 记录进度
+  async record(userId: number, module: string, itemId: string, itemType: string, score: number) {
+    const result = await query(
+      `INSERT INTO progress (user_id, module, item_id, item_type, score, status, completed_at)
+       VALUES ($1, $2, $3, $4, $5, 'completed', CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, module, item_id)
+       DO UPDATE SET score = $5, status = 'completed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [userId, module, itemId, itemType, score]
+    );
+    return result.rows[0];
+  },
+
+  // 获取用户进度
+  async getByUser(userId: number) {
+    const result = await query(
+      'SELECT * FROM progress WHERE user_id = $1 ORDER BY updated_at DESC',
+      [userId]
+    );
+    return result.rows;
+  },
+
+  // 获取模块统计
+  async getStats(userId: number) {
+    const result = await query(
+      `SELECT module, COUNT(*) as total, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
+       FROM progress WHERE user_id = $1 GROUP BY module`,
+      [userId]
+    );
+    return result.rows;
+  },
 };
 
-// 收藏操作
-export const getFavorites = (userId: number) => readData(FAVORITES_FILE).filter(f => f.user_id === userId);
-export const addFavorite = (fav: any) => {
-    const data = readData(FAVORITES_FILE);
-    data.push(fav);
-    writeData(FAVORITES_FILE, data);
-};
-export const removeFavorite = (userId: number, id: number) => {
-    const data = readData(FAVORITES_FILE).filter(f => !(f.user_id === userId && f.id === id));
-    writeData(FAVORITES_FILE, data);
+// 错题本相关
+export const wrongQuestionDb = {
+  // 添加错题
+  async add(userId: number, questionId: string, questionText: string, yourAnswer: string, correctAnswer: string, module: string) {
+    const result = await query(
+      `INSERT INTO wrong_questions (user_id, question_id, question_text, your_answer, correct_answer, module)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (user_id, question_id) 
+       DO UPDATE SET times_wrong = wrong_questions.times_wrong + 1, last_wrong_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [userId, questionId, questionText, yourAnswer, correctAnswer, module]
+    );
+    return result.rows[0];
+  },
+
+  // 获取用户错题
+  async getByUser(userId: number) {
+    const result = await query(
+      'SELECT * FROM wrong_questions WHERE user_id = $1 ORDER BY last_wrong_at DESC',
+      [userId]
+    );
+    return result.rows;
+  },
+
+  // 删除错题（答对后）
+  async remove(userId: number, questionId: string) {
+    await query(
+      'DELETE FROM wrong_questions WHERE user_id = $1 AND question_id = $2',
+      [userId, questionId]
+    );
+  },
 };
 
-// 成就操作
-export const getAchievements = (userId: number) => readData(ACHIEVEMENTS_FILE).filter(a => a.user_id === userId);
-export const addAchievement = (ach: any) => {
-    const data = readData(ACHIEVEMENTS_FILE);
-    data.push(ach);
-    writeData(ACHIEVEMENTS_FILE, data);
+// 收藏相关
+export const favoriteDb = {
+  // 添加收藏
+  async add(userId: number, itemId: string, itemType: string, title: string) {
+    const result = await query(
+      `INSERT INTO favorites (user_id, item_id, item_type, title)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, item_id, item_type) DO NOTHING
+       RETURNING *`,
+      [userId, itemId, itemType, title]
+    );
+    return result.rows[0];
+  },
+
+  // 获取用户收藏
+  async getByUser(userId: number) {
+    const result = await query(
+      'SELECT * FROM favorites WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
+    return result.rows;
+  },
+
+  // 取消收藏
+  async remove(userId: number, itemId: string, itemType: string) {
+    await query(
+      'DELETE FROM favorites WHERE user_id = $1 AND item_id = $2 AND item_type = $3',
+      [userId, itemId, itemType]
+    );
+  },
+
+  // 检查是否已收藏
+  async isFavorited(userId: number, itemId: string, itemType: string) {
+    const result = await query(
+      'SELECT id FROM favorites WHERE user_id = $1 AND item_id = $2 AND item_type = $3',
+      [userId, itemId, itemType]
+    );
+    return result.rows.length > 0;
+  },
 };
 
-// 生成ID
-export const generateId = (file: string) => {
-    const data = readData(file);
-    return data.length > 0 ? Math.max(...data.map((d: any) => d.id || 0)) + 1 : 1;
+// 成就相关
+export const achievementDb = {
+  // 解锁成就
+  async unlock(userId: number, achievementId: string, title: string, description: string) {
+    const result = await query(
+      `INSERT INTO achievements (user_id, achievement_id, title, description)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, achievement_id) DO NOTHING
+       RETURNING *`,
+      [userId, achievementId, title, description]
+    );
+    return result.rows[0];
+  },
+
+  // 获取用户成就
+  async getByUser(userId: number) {
+    const result = await query(
+      'SELECT * FROM achievements WHERE user_id = $1 ORDER BY unlocked_at DESC',
+      [userId]
+    );
+    return result.rows;
+  },
 };
+
+export default pool;
