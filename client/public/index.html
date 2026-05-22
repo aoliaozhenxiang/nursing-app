@@ -1176,36 +1176,6 @@
         document.getElementById(contentId).style.display = 'block';
     }
 
-    // 雷达图
-    const ctx = document.getElementById('radarChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'radar',
-        data: {
-            labels: ['生活照护', '基础照护', '康复服务', '心理支持', '照护评估', '质量管理'],
-            datasets: [{
-                label: '掌握度',
-                data: [82, 67, 45, 78, 62, 88],
-                backgroundColor: 'rgba(42,157,143,0.2)',
-                borderColor: '#2a9d8f',
-                pointBackgroundColor: '#2a9d8f',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            scales: {
-                r: {
-                    beginAtZero: true,
-                    max: 100,
-                    ticks: { display: false },
-                    grid: { color: '#e2f0ea' },
-                    pointLabels: { font: { size: 10 } }
-                }
-            },
-            plugins: { legend: { display: false } }
-        }
-    });
 
     // 实操对比
     function showCompareResult(type) {
