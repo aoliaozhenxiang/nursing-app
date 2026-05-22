@@ -384,7 +384,7 @@
 
         /* 页面内容留白 */
         .page-content { padding-bottom: 80px; }
-        #gamePage { display: none !important; }
+        #gamePage { display: none; }
         .page-content[style*="display: none"] { display: none !important; }
 
         /* Tab切换 */
@@ -1134,7 +1134,7 @@
 
 <script>
     // 页面切换
-    function showSection(section) {
+    function showSection(section) { // showSection called
         const pages = ['mainPage', 'theoryPage', 'practicePage', 'examPage', 'aiPage', 'profilePage'];
         pages.forEach(p => {
             document.getElementById(p).style.display = 'none';
@@ -1169,7 +1169,7 @@
     }
 
     // Tab切换
-    function switchTab(el, contentId) {
+    function switchTab(el, contentId) { // switchTab
         el.parentElement.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
         el.classList.add('active');
         el.closest('.container').querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
