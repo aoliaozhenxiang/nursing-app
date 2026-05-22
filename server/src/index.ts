@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/auth.js";
+import * as path from "path";
+import * as fs from "fs";
 
 const app = express();
 const port = process.env.PORT || 9091;
@@ -19,6 +21,25 @@ app.get('/api/v1/health', (req, res) => {
 // Auth routes
 app.use('/api/v1/auth', authRoutes);
 
-app.listen(port, () => {
-  console.log(`Server listening at http://localhost:${port}/`);
+// 静态文件服务 - 前端页面
+const publicPath = path.join(process.cwd(), '../client/public');
+app.use(express.static(publicPath));
+
+// 首页
+app.get('/', (req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
+});
+
+// 所有HTML页面都走同一个路由
+app.get('*.html', (req, res) => {
+  const filePath = path.join(publicPath, req.path);
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send('Page not found');
+  }
+});
+
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server running at http://0.0.0.0:${port}/`);
 });
