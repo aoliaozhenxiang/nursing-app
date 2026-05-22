@@ -1244,7 +1244,7 @@
     let currentGame = '';
     let score = 0;
 
-    function startGame(type) { alert("startGame called: " + type);
+    function startGame(type) { // startGame called
         document.getElementById('mainPage').style.display = 'none';
         document.getElementById('gamePage').style.display = 'block';
         document.getElementById('sortGame').style.display = 'none';
@@ -1288,7 +1288,7 @@
     let sortItems = [];
     let sortSelected = [];
 
-    function initSortGame() { alert("initSortGame called");
+    function initSortGame() { // initSortGame called
         sortItems = [...sortQuestions[0].text];
         sortSelected = [];
         shuffle(sortItems);
@@ -1296,7 +1296,7 @@
         document.getElementById('sortResult').textContent = '';
     }
 
-    function renderSortItems() { alert("renderSortItems called");
+    function renderSortItems() { // renderSortItems called
         const grid = document.getElementById('sortGrid');
         grid.innerHTML = '';
         sortItems.forEach((item, i) => {
