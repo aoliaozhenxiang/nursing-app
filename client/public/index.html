@@ -1134,47 +1134,15 @@
 
 <script>
     // 页面切换
-    function showSection(section) { // showSection: section
-        console.log('切换到:', section);
-        alert('即将切换');
-        document.getElementById('theoryPage').style.display = 'block';
-        alert('设置完成');
-        var el = document.getElementById('theoryPage'); el.style.visibility = 'visible'; el.style.opacity = '1';
-        alert('theoryPage: ' + (el ? '存在' : '不存在') + ', display=' + (el ? el.style.display : 'N/A')); // showSection called
-        const pages = ['mainPage', 'theoryPage', 'practicePage', 'examPage', 'aiPage', 'profilePage'];
+    function showSection(section) {
+        const pages = ['mainPage', 'theoryPage', 'practicePage', 'examPage', 'aiPage', 'profilePage', 'gamePage'];
         pages.forEach(p => {
-            document.getElementById(p).style.display = 'none';
+            const el = document.getElementById(p);
+            if (el) el.style.display = 'none';
         });
-        
-        if (section === 'home') {
-            document.getElementById('mainPage').style.display = 'block';
-        } else if (section === 'theory') {
-            document.getElementById('theoryPage').style.display = 'block';
-        } else if (section === 'practice') {
-            document.getElementById('practicePage').style.display = 'block';
-        } else if (section === 'exam') {
-            document.getElementById('examPage').style.display = 'block';
-        } else if (section === 'ai') {
-            document.getElementById('aiPage').style.display = 'block';
-        } else if (section === 'profile') {
-            document.getElementById('profilePage').style.display = 'block';
-        }
-
-        // 更新底部导航
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => item.classList.remove('active'));
-        const sectionMap = { 'home': 0, 'theory': 1, 'practice': 2, 'exam': 3, 'profile': 4 };
-        if (sectionMap[section] !== undefined) {
-            navItems[sectionMap[section]].classList.add('active');
-        }
-        if (section !== 'home') {
-            navItems.forEach(item => item.classList.remove('active'));
-        }
-
-        window.scrollTo(0, 0);
+        const target = document.getElementById(section + 'Page');
+        if (target) target.style.display = 'block';
     }
-
-    // Tab切换
     function switchTab(el, contentId) { // switchTab
         el.parentElement.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
         el.classList.add('active');
