@@ -1274,6 +1274,8 @@
     let score = 0;
 
     function startGame(type) {
+        console.log('startGame 被调用, type=' + type);
+        alert('开始游戏: ' + type);
         currentGame = type;
         const pages = ['mainPage', 'theoryPage', 'practicePage', 'examPage', 'aiPage', 'profilePage', 'gamePage'];
         pages.forEach(p => document.getElementById(p).style.display = 'none');
@@ -1284,6 +1286,7 @@
         document.getElementById('quizGame').style.display = 'none';
 
         if (type === 'sort') {
+            alert('加载排序游戏');
             document.getElementById('gameTitle').textContent = '排序记忆';
             document.getElementById('gameSubtitle').textContent = '护理步骤排序';
             document.getElementById('sortGame').style.display = 'block';
