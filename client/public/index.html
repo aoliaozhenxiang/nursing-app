@@ -1136,7 +1136,9 @@
     // 页面切换
     function showSection(section) { // showSection: section
         console.log('切换到:', section);
-        alert('即将切换到 ' + section + ' 页'); // showSection called
+        alert('即将切换');
+        document.getElementById('theoryPage').style.display = 'block';
+        alert('设置完成'); // showSection called
         const pages = ['mainPage', 'theoryPage', 'practicePage', 'examPage', 'aiPage', 'profilePage'];
         pages.forEach(p => {
             document.getElementById(p).style.display = 'none';
