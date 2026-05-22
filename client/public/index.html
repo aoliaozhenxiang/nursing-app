@@ -1139,7 +1139,7 @@
         alert('即将切换');
         document.getElementById('theoryPage').style.display = 'block';
         alert('设置完成');
-        var el = document.getElementById('theoryPage');
+        var el = document.getElementById('theoryPage'); el.style.visibility = 'visible'; el.style.opacity = '1';
         alert('theoryPage: ' + (el ? '存在' : '不存在') + ', display=' + (el ? el.style.display : 'N/A')); // showSection called
         const pages = ['mainPage', 'theoryPage', 'practicePage', 'examPage', 'aiPage', 'profilePage'];
         pages.forEach(p => {
