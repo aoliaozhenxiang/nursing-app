@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>养老护理闯关游戏</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0D5C63 0%, #14919B 50%, #0AD1C8 100%);
+            min-height: 100vh;
+            color: #1a2f2a;
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        
+        /* 顶部导航 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            color: white;
+        }
+        .header h1 { font-size: 1.8rem; }
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.3); }
+        
+        /* 游戏选择页 */
+        .game-menu {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 30px;
+        }
+        .game-card {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            text-decoration: none;
+            color: inherit;
+        }
+        .game-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        }
+        .game-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #2a9d8f, #14919B);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2.5rem;
+            color: white;
+        }
+        .game-card h3 { font-size: 1.5rem; margin-bottom: 10px; color: #1b4332; }
+        .game-card p { color: #6b7c7a; font-size: 0.95rem; }
+        .game-badge {
+            display: inline-block;
+            background: #e8f8f5;
+            color: #2a9d8f;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+        
+        /* 游戏区域 */
+        .game-area {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .game-area.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* 游戏标题栏 */
+        .game-header {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .game-title { font-size: 1.5rem; font-weight: 700; color: #1b4332; }
+        .game-score {
+            background: linear-gradient(135deg, #2a9d8f, #14919B);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        /* 卡片网格 */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        /* 游戏卡片 */
+        .card-item {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border: 3px solid transparent;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .card-item.selected {
+            border-color: #2a9d8f;
+            background: #e8f8f5;
+            transform: scale(1.08);
+        }
+        .card-item.matched {
+            opacity: 0.4;
+            pointer-events: none;
+            background: #d4edda;
+        }
+        .card-item.wrong {
+            animation: shake 0.5s;
+            border-color: #e76f51;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        /* 连连看双列 */
+        .match-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        .match-column {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .match-column h4 {
+            text-align: center;
+            color: #1b4332;
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+        }
+        .match-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        .match-item:hover {
+            background: #e8f8f5;
+            transform: translateX(5px);
+        }
+        .match-item.selected {
+            background: #2a9d8f;
+            color: white;
+            transform: scale(1.05);
+        }
+        .match-item.matched {
+            background: #d4edda;
+            color: #155724;
+            pointer-events: none;
+        }
+        
+        /* 速答题 */
+        .quiz-card {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .quiz-timer {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #2a9d8f;
+            margin-bottom: 20px;
+        }
+        .quiz-timer.warning { color: #e76f51; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .quiz-question {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1b4332;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .quiz-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .quiz-option {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        .quiz-option:hover {
+            border-color: #2a9d8f;
+            background: #e8f8f5;
+        }
+        .quiz-option.correct {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        .quiz-option.wrong {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        
+        /* 按钮 */
+        .btn {
+            background: linear-gradient(135deg, #2a9d8f, #14919B);
+            color: white;
+            padding: 14px 36px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(42,157,143,0.3);
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(42,157,143,0.4);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #2a9d8f;
+            color: #2a9d8f;
+        }
+        .btn-outline:hover {
+            background: #2a9d8f;
+            color: white;
+        }
+        
+        /* 结果弹窗 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: white;
+            border-radius: 32px;
+            padding: 48px;
+            text-align: center;
+            max-width: 450px;
+            animation: popIn 0.4s ease;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+        .modal h2 { font-size: 2rem; color: #1b4332; margin-bottom: 15px; }
+        .modal p { color: #6b7c7a; margin-bottom: 30px; font-size: 1.1rem; }
+        .modal .score-display {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #2a9d8f;
+            margin-bottom: 20px;
+        }
+        
+        /* 进度条 */
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 20px;
+            height: 12px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #2a9d8f, #0AD1C8);
+            height: 100%;
+            border-radius: 20px;
+            transition: width 0.5s ease;
+        }
+        
+        /* 说明文字 */
+        .game-tip {
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 16px 20px;
+            border-radius: 0 12px 12px 0;
+            margin-bottom: 24px;
+            color: #92400e;
+        }
+        .game-tip i { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-gamepad"></i> 闯关游戏</h1>
+            <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i> 返回首页</a>
+        </div>
+        
+        <!-- 游戏选择菜单 -->
+        <div id="gameMenu" class="game-menu">
+            <a href="?game=sort" class="game-card">
+                <div class="game-icon"><i class="fas fa-sort-numeric-up"></i></div>
+                <h3>排序记忆</h3>
+                <p>将护理步骤按正确顺序排列，锻炼流程记忆能力</p>
+                <span class="game-badge"><i class="fas fa-star"></i> 考验逻辑</span>
+            </a>
+            
+            <a href="?game=match" class="game-card">
+                <div class="game-icon"><i class="fas fa-link"></i></div>
+                <h3>连连看</h3>
+                <p>匹配相关的护理知识点，加深理解与记忆</p>
+                <span class="game-badge"><i class="fas fa-brain"></i> 强化理解</span>
+            </a>
+            
+            <a href="?game=quiz" class="game-card">
+                <div class="game-icon"><i class="fas fa-bolt"></i></div>
+                <h3>速答挑战</h3>
+                <p>30秒限时答题，测试你对知识点的掌握程度</p>
+                <span class="game-badge"><i class="fas fa-fire"></i> 速度对决</span>
+            </a>
+            
+            <a href="?game=puzzle" class="game-card">
+                <div class="game-icon"><i class="fas fa-puzzle-piece"></i></div>
+                <h3>拼图游戏</h3>
+                <p>将打乱的护理流程图拼凑完整</p>
+                <span class="game-badge"><i class="fas fa-image"></i> 可视化训练</span>
+            </a>
+        </div>
+        
+        <!-- 排序游戏 -->
+        <div id="sortGame" class="game-area">
+            <div class="game-header">
+                <div>
+                    <div class="game-title">排序记忆游戏</div>
+                    <div style="color:#6b7c7a;margin-top:5px;">点击两张卡片交换位置</div>
+                </div>
+                <div class="game-score"><i class="fas fa-star"></i> <span id="sortScore">0</span></div>
+            </div>
+            
+            <div class="game-tip">
+                <i class="fas fa-lightbulb"></i>
+                <strong>游戏规则：</strong>点击选中第一张卡片，再点击第二张卡片交换位置，按正确顺序排列后提交！
+            </div>
+            
+            <div class="progress-bar">
+                <div id="sortProgress" class="progress-fill" style="width: 0%"></div>
+            </div>
+            
+            <div id="sortGrid" class="card-grid"></div>
+            
+            <div style="text-align:center;margin-top:30px;">
+                <button class="btn btn-outline" onclick="closeGame()"><i class="fas fa-arrow-left"></i> 返回</button>
+                <button class="btn" onclick="checkSortAnswer()"><i class="fas fa-check"></i> 提交答案</button>
+            </div>
+            
+            <div id="sortResult" class="game-tip" style="display:none;margin-top:20px;"></div>
+        </div>
+        
+        <!-- 连连看游戏 -->
+        <div id="matchGame" class="game-area">
+            <div class="game-header">
+                <div>
+                    <div class="game-title">连连看游戏</div>
+                    <div style="color:#6b7c7a;margin-top:5px;">剩余 <span id="matchRemaining">8</span> 组</div>
+                </div>
+                <div class="game-score"><i class="fas fa-star"></i> <span id="matchScore">0</span></div>
+            </div>
+            
+            <div class="game-tip">
+                <i class="fas fa-lightbulb"></i>
+                <strong>游戏规则：</strong>点击左侧和右侧对应的卡片进行匹配，全部匹配成功即可通关！
+            </div>
+            
+            <div class="match-grid">
+                <div class="match-column">
+                    <h4>操作项目</h4>
+                    <div id="matchLeft"></div>
+                </div>
+                <div class="match-column">
+                    <h4>要点说明</h4>
+                    <div id="matchRight"></div>
+                </div>
+            </div>
+            
+            <div style="text-align:center;margin-top:30px;">
+                <button class="btn" onclick="closeGame()"><i class="fas fa-arrow-left"></i> 返回</button>
+            </div>
+        </div>
+        
+        <!-- 速答题游戏 -->
+        <div id="quizGame" class="game-area">
+            <div class="game-header">
+                <div>
+                    <div class="game-title">速答挑战</div>
+                    <div style="color:#6b7c7a;margin-top:5px;">第 <span id="quizNum">1</span> / <span id="quizTotal">5</span> 题</div>
+                </div>
+                <div class="game-score"><i class="fas fa-star"></i> <span id="quizScore">0</span></div>
+            </div>
+            
+            <div class="quiz-card">
+                <div id="quizTimer" class="quiz-timer">30</div>
+                <div id="quizQuestion" class="quiz-question"></div>
+                <div id="quizOptions" class="quiz-options"></div>
+            </div>
+            
+            <div style="text-align:center;margin-top:30px;">
+                <button class="btn btn-outline" onclick="closeGame()"><i class="fas fa-arrow-left"></i> 返回</button>
+            </div>
+        </div>
+        
+        <!-- 拼图游戏 -->
+        <div id="puzzleGame" class="game-area">
+            <div class="game-header">
+                <div>
+                    <div class="game-title">护理流程拼图</div>
+                    <div style="color:#6b7c7a;margin-top:5px;">将步骤拖入正确位置</div>
+                </div>
+                <div class="game-score"><i class="fas fa-star"></i> <span id="puzzleScore">0</span></div>
+            </div>
+            
+            <div class="game-tip">
+                <i class="fas fa-lightbulb"></i>
+                <strong>游戏规则：</strong>点击卡片选中，再点击目标位置放入，正确放入所有步骤即通关！
+            </div>
+            
+            <div class="card-grid" id="puzzleGrid"></div>
+            
+            <div style="text-align:center;margin-top:30px;">
+                <button class="btn btn-outline" onclick="closeGame()"><i class="fas fa-arrow-left"></i> 返回</button>
+                <button class="btn" onclick="checkPuzzleAnswer()"><i class="fas fa-check"></i> 提交答案</button>
+            </div>
+            
+            <div id="puzzleResult" class="game-tip" style="display:none;margin-top:20px;"></div>
+        </div>
+    </div>
+    
+    <!-- 结果弹窗 -->
+    <div id="resultModal" class="modal">
+        <div class="modal-content">
+            <div id="modalIcon" class="modal-icon">🎉</div>
+            <h2 id="modalTitle">恭喜通关！</h2>
+            <p id="modalMessage">你已经完成了这个游戏！</p>
+            <div id="modalScore" class="score-display">+20</div>
+            <button class="btn" onclick="closeModal()">继续挑战</button>
+        </div>
+    </div>
+
+    <script>
+        // ============ 排序游戏 ============
+        const sortQuestions = [
+            {
+                text: ['评估老人情况', '准备操作用物', '向老人解释目的', '协助老人翻身', '观察皮肤受压情况'],
+                answer: 0
+            },
+            {
+                text: ['评估意识状态', '准备口腔护理用物', '协助老人侧卧', '按顺序擦拭口腔', '整理用物记录'],
+                answer: 1
+            }
+        ];
+        let sortItems = [];
+        let sortSelected = [];
+        let sortIndex = 0;
+        let sortTotalScore = 0;
+        
+        function initSortGame() {
+            sortItems = [...sortQuestions[sortIndex].text];
+            sortSelected = [];
+            shuffle(sortItems);
+            renderSortCards();
+            document.getElementById('sortResult').style.display = 'none';
+            document.getElementById('sortProgress').style.width = '0%';
+        }
+        
+        function renderSortCards() {
+            const grid = document.getElementById('sortGrid');
+            grid.innerHTML = '';
+            sortItems.forEach((item, i) => {
+                const div = document.createElement('div');
+                div.className = 'card-item';
+                div.textContent = item;
+                div.onclick = () => selectSortCard(i);
+                grid.appendChild(div);
+            });
+        }
+        
+        function selectSortCard(idx) {
+            const cards = document.querySelectorAll('#sortGrid .card-item');
+            if (sortSelected.length === 0) {
+                sortSelected.push(idx);
+                cards[idx].classList.add('selected');
+            } else {
+                const [prev] = sortSelected;
+                [sortItems[prev], sortItems[idx]] = [sortItems[idx], sortItems[prev]];
+                sortSelected = [];
+                renderSortCards();
+            }
+        }
+        
+        function checkSortAnswer() {
+            const correct = sortItems.every((item, i) => item === sortQuestions[sortIndex].text[i]);
+            const result = document.getElementById('sortResult');
+            const progress = document.getElementById('sortProgress');
+            
+            if (correct) {
+                sortTotalScore += 20;
+                document.getElementById('sortScore').textContent = sortTotalScore;
+                result.style.display = 'block';
+                result.innerHTML = '<i class="fas fa-check-circle"></i> <strong>正确！</strong>步骤完全正确！';
+                result.style.background = '#d4edda';
+                result.style.borderColor = '#28a745';
+                result.style.color = '#155724';
+                progress.style.width = '100%';
+                showModal('🎉', '太棒了！', '你的护理流程完全正确！', '+20');
+            } else {
+                result.style.display = 'block';
+                result.innerHTML = '<i class="fas fa-times-circle"></i> <strong>顺序不对！</strong>请重新调整后再试。';
+                result.style.background = '#fff3cd';
+                result.style.borderColor = '#ffc107';
+                result.style.color = '#856404';
+            }
+        }
+        
+        // ============ 连连看游戏 ============
+        const matchPairs = [
+            { left: '床上洗头', right: '水温40℃', pair: 1 },
+            { left: '口腔护理', right: '棉球擦拭', pair: 2 },
+            { left: '翻身拍背', right: '每2小时', pair: 3 },
+            { left: '鼻饲喂食', right: '半卧位30°', pair: 4 },
+            { left: '压疮预防', right: '减压气垫', pair: 5 },
+            { left: '噎食急救', right: '海姆立克', pair: 6 },
+            { left: '热水袋保暖', right: '水温60℃以下', pair: 7 },
+            { left: '轮椅转运', right: '固定刹车', pair: 8 }
+        ];
+        let matchLeft = [];
+        let matchRight = [];
+        let selectedLeft = null;
+        let selectedRight = null;
+        let matchCount = 0;
+        let matchTotalScore = 0;
+        
+        function initMatchGame() {
+            matchLeft = [...matchPairs.map(p => ({ text: p.left, pair: p.pair, matched: false }))];
+            matchRight = [...matchPairs.map(p => ({ text: p.right, pair: p.pair, matched: false }))];
+            selectedLeft = null;
+            selectedRight = null;
+            matchCount = 0;
+            shuffle(matchLeft);
+            shuffle(matchRight);
+            renderMatchCards();
+            document.getElementById('matchRemaining').textContent = matchPairs.length;
+        }
+        
+        function renderMatchCards() {
+            const leftDiv = document.getElementById('matchLeft');
+            const rightDiv = document.getElementById('matchRight');
+            leftDiv.innerHTML = '';
+            rightDiv.innerHTML = '';
+            
+            matchLeft.forEach((item, i) => {
+                const div = document.createElement('div');
+                div.className = 'match-item' + (item.matched ? ' matched' : '');
+                div.textContent = item.text;
+                if (!item.matched) div.onclick = () => selectLeftMatch(i);
+                leftDiv.appendChild(div);
+            });
+            
+            matchRight.forEach((item, i) => {
+                const div = document.createElement('div');
+                div.className = 'match-item' + (item.matched ? ' matched' : '');
+                div.textContent = item.text;
+                if (!item.matched) div.onclick = () => selectRightMatch(i);
+                rightDiv.appendChild(div);
+            });
+        }
+        
+        function selectLeftMatch(idx) {
+            selectedLeft = idx;
+            renderMatchCards();
+            checkMatch();
+        }
+        
+        function selectRightMatch(idx) {
+            selectedRight = idx;
+            renderMatchCards();
+            checkMatch();
+        }
+        
+        function checkMatch() {
+            if (selectedLeft === null || selectedRight === null) return;
+            
+            const left = matchLeft[selectedLeft];
+            const right = matchRight[selectedRight];
+            
+            if (left.pair === right.pair) {
+                matchLeft[selectedLeft].matched = true;
+                matchRight[selectedRight].matched = true;
+                matchCount++;
+                matchTotalScore += 10;
+                document.getElementById('matchScore').textContent = matchTotalScore;
+                document.getElementById('matchRemaining').textContent = matchPairs.length - matchCount;
+                
+                if (matchCount === matchPairs.length) {
+                    showModal('🎉', '全部匹配成功！', '你已掌握所有护理知识点！', '+80');
+                }
+            }
+            
+            selectedLeft = null;
+            selectedRight = null;
+            setTimeout(renderMatchCards, 300);
+        }
+        
+        // ============ 速答题游戏 ============
+        const quizQuestions = [
+            { q: '为卧床老人翻身间隔时间应为？', options: ['30分钟', '1小时', '2小时', '3小时'], a: 2 },
+            { q: '鼻饲时老人体位应为？', options: ['平卧位', '俯卧位', '半卧位30-45°', '侧卧位'], a: 2 },
+            { q: '压疮最好发部位是？', options: ['足跟', '骶尾部', '手背', '面部'], a: 1 },
+            { q: '口腔护理时昏迷老人能否漱口？', options: ['可以', '不可以', '视情况', '不确定'], a: 1 },
+            { q: '热水袋水温应为多少摄氏度？', options: ['40-50℃', '60℃以下', '70-80℃', '无所谓'], a: 1 }
+        ];
+        let quizIndex = 0;
+        let quizScore = 0;
+        let quizTimer = null;
+        let quizTotalScore = 0;
+        
+        function initQuizGame() {
+            quizIndex = 0;
+            quizScore = 0;
+            quizTotalScore = 0;
+            shuffle(quizQuestions);
+            document.getElementById('quizTotal').textContent = quizQuestions.length;
+            showQuizQuestion();
+        }
+        
+        function showQuizQuestion() {
+            if (quizIndex >= quizQuestions.length) {
+                showModal('🏆', '答题结束！', `你答对了 ${quizScore}/${quizQuestions.length} 题`, `+${quizTotalScore}`);
+                return;
+            }
+            
+            const q = quizQuestions[quizIndex];
+            document.getElementById('quizNum').textContent = quizIndex + 1;
+            document.getElementById('quizScore').textContent = quizTotalScore;
+            document.getElementById('quizQuestion').textContent = q.q;
+            
+            const optDiv = document.getElementById('quizOptions');
+            optDiv.innerHTML = '';
+            q.options.forEach((opt, i) => {
+                const btn = document.createElement('div');
+                btn.className = 'quiz-option';
+                btn.textContent = opt;
+                btn.onclick = () => selectQuizAnswer(i);
+                optDiv.appendChild(btn);
+            });
+            
+            let timeLeft = 30;
+            const timerDiv = document.getElementById('quizTimer');
+            timerDiv.textContent = timeLeft;
+            timerDiv.classList.remove('warning');
+            
+            if (quizTimer) clearInterval(quizTimer);
+            quizTimer = setInterval(() => {
+                timeLeft--;
+                timerDiv.textContent = timeLeft;
+                if (timeLeft <= 10) timerDiv.classList.add('warning');
+                if (timeLeft <= 0) {
+                    clearInterval(quizTimer);
+                    selectQuizAnswer(-1);
+                }
+            }, 1000);
+        }
+        
+        function selectQuizAnswer(idx) {
+            if (quizTimer) clearInterval(quizTimer);
+            
+            const q = quizQuestions[quizIndex];
+            const options = document.querySelectorAll('.quiz-option');
+            
+            options.forEach((opt, i) => {
+                opt.onclick = null;
+                if (i === q.a) opt.classList.add('correct');
+                else if (i === idx && idx !== q.a) opt.classList.add('wrong');
+            });
+            
+            if (idx === q.a) {
+                quizScore++;
+                quizTotalScore += 10;
+                document.getElementById('quizScore').textContent = quizTotalScore;
+            }
+            
+            setTimeout(() => {
+                quizIndex++;
+                showQuizQuestion();
+            }, 1000);
+        }
+        
+        // ============ 拼图游戏 ============
+        const puzzleSteps = [
+            { text: '1. 评估老人需求', correctPos: 0 },
+            { text: '2. 准备操作用物', correctPos: 1 },
+            { text: '3. 沟通解释目的', correctPos: 2 },
+            { text: '4. 实施护理操作', correctPos: 3 },
+            { text: '5. 整理记录评价', correctPos: 4 }
+        ];
+        let puzzleItems = [];
+        let puzzleSelected = null;
+        let puzzleTotalScore = 0;
+        
+        function initPuzzleGame() {
+            puzzleItems = [...puzzleSteps.map(s => ({ text: s.text, correctPos: s.correctPos }))];
+            puzzleSelected = null;
+            shuffle(puzzleItems);
+            renderPuzzleCards();
+            document.getElementById('puzzleResult').style.display = 'none';
+        }
+        
+        function renderPuzzleCards() {
+            const grid = document.getElementById('puzzleGrid');
+            grid.innerHTML = '';
+            puzzleItems.forEach((item, i) => {
+                const div = document.createElement('div');
+                div.className = 'card-item';
+                div.textContent = item.text;
+                div.style.cursor = 'pointer';
+                div.onclick = () => selectPuzzleItem(i);
+                grid.appendChild(div);
+            });
+        }
+        
+        function selectPuzzleItem(idx) {
+            const cards = document.querySelectorAll('#puzzleGrid .card-item');
+            if (puzzleSelected === null) {
+                puzzleSelected = idx;
+                cards[idx].classList.add('selected');
+            } else {
+                [puzzleItems[puzzleSelected], puzzleItems[idx]] = [puzzleItems[idx], puzzleItems[puzzleSelected]];
+                puzzleSelected = null;
+                renderPuzzleCards();
+            }
+        }
+        
+        function checkPuzzleAnswer() {
+            const correct = puzzleItems.every((item, i) => item.correctPos === i);
+            const result = document.getElementById('puzzleResult');
+            
+            if (correct) {
+                puzzleTotalScore += 30;
+                document.getElementById('puzzleScore').textContent = puzzleTotalScore;
+                result.style.display = 'block';
+                result.innerHTML = '<i class="fas fa-check-circle"></i> <strong>完美！</strong>护理流程完全正确！';
+                result.style.background = '#d4edda';
+                result.style.borderColor = '#28a745';
+                result.style.color = '#155724';
+                showModal('🎉', '拼图完成！', '你已经掌握完整的护理流程！', '+30');
+            } else {
+                result.style.display = 'block';
+                result.innerHTML = '<i class="fas fa-times-circle"></i> <strong>还有错误！</strong>请检查顺序是否正确。';
+                result.style.background = '#fff3cd';
+                result.style.borderColor = '#ffc107';
+                result.style.color = '#856404';
+            }
+        }
+        
+        // ============ 通用函数 ============
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        }
+        
+        function showModal(icon, title, message, score) {
+            document.getElementById('modalIcon').textContent = icon;
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById('modalScore').textContent = score;
+            document.getElementById('resultModal').classList.add('active');
+        }
+        
+        function closeModal() {
+            document.getElementById('resultModal').classList.remove('active');
+        }
+        
+        function closeGame() {
+            if (quizTimer) clearInterval(quizTimer);
+            document.querySelectorAll('.game-area').forEach(el => el.classList.remove('active'));
+            document.getElementById('gameMenu').style.display = 'grid';
+            window.location.href = '?';
+        }
+        
+        // 页面加载时根据URL参数启动游戏
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            const game = params.get('game');
+            
+            document.getElementById('gameMenu').style.display = 'none';
+            
+            if (game === 'sort') {
+                document.getElementById('sortGame').classList.add('active');
+                initSortGame();
+            } else if (game === 'match') {
+                document.getElementById('matchGame').classList.add('active');
+                initMatchGame();
+            } else if (game === 'quiz') {
+                document.getElementById('quizGame').classList.add('active');
+                initQuizGame();
+            } else if (game === 'puzzle') {
+                document.getElementById('puzzleGame').classList.add('active');
+                initPuzzleGame();
+            } else {
+                document.getElementById('gameMenu').style.display = 'grid';
+            }
+        };
+    </script>
+</body>
+</html>
