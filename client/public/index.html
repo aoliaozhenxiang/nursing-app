@@ -1313,14 +1313,18 @@
     let sortUserAnswer = [];
 
     function initSortGame() {
-        const q = sortQuestions[0];
-        sortUserAnswer = [0,1,2,3,4].sort(() => Math.random() - 0.5);
-        const container = document.getElementById('sortItems');
-        container.innerHTML = '';
-        sortUserAnswer.forEach((idx, i) => {
-            const item = document.createElement('div');
-            item.className = 'chapter-item';
-            item.style.cursor = 'pointer';
+        try {
+            alert('initSortGame 开始');
+            const q = sortQuestions[0];
+            alert('sortQuestions: ' + JSON.stringify(q));
+            sortUserAnswer = [0,1,2,3,4].sort(() => Math.random() - 0.5);
+            const container = document.getElementById('sortItems');
+            alert('container: ' + container);
+            container.innerHTML = '';
+            sortUserAnswer.forEach((idx, i) => {
+                const item = document.createElement('div');
+                item.className = 'chapter-item';
+                item.style.cursor = 'pointer';
             item.innerHTML = '<span style="background:#2a9d8f;color:white;padding:4px 10px;border-radius:8px;margin-right:10px;">' + (i+1) + '</span>' + q.items[idx];
             item.onclick = () => moveSortItem(i);
             item.dataset.idx = i;
@@ -1328,6 +1332,7 @@
             container.appendChild(item);
         });
         document.getElementById('sortResult').style.display = 'none';
+        } catch(e) { alert('initSortGame错误: ' + e.message); }
     }
 
     function moveSortItem(idx) {
