@@ -1326,7 +1326,7 @@
         }
     }
 
-    function checkSortAnswer() {
+    function checkSortAnswer() { var r = document.getElementById("sortResult"); r.style.display = "block";
         const correct = sortItems.every((item, i) => item === sortQuestions[0].text[i]);
         const result = document.getElementById('sortResult');
         if (correct) {
