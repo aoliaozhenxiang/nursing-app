@@ -1317,7 +1317,7 @@
     let sortItems = [];
     let sortSelected = [];
 
-    function initSortGame() {
+    function initSortGame() { alert("initSortGame called"); {
         sortItems = [...sortQuestions[0].text];
         sortSelected = [];
         shuffle(sortItems);
@@ -1325,7 +1325,7 @@
         document.getElementById('sortResult').textContent = '';
     }
 
-    function renderSortItems() {
+    function renderSortItems() { alert("renderSortItems called"); {
         const grid = document.getElementById('sortGrid');
         grid.innerHTML = '';
         sortItems.forEach((item, i) => {
