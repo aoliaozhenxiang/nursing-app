@@ -1275,7 +1275,9 @@
 
     function startGame(type) {
         alert('步骤1: type=' + type);
+        alert('步骤1b: 即将赋值');
         currentGame = type;
+        alert('步骤1c: 赋值完成, currentGame=' + currentGame);
         alert('步骤2: 准备获取pages');
         const pages = ['mainPage', 'theoryPage', 'practicePage', 'examPage', 'aiPage', 'profilePage', 'gamePage'];
         alert('步骤3: pages=' + pages.length);
