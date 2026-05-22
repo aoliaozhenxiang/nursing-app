@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth.js';
-import { progressDb, wrongQuestionDb, favoriteDb, achievementDb } from './db.js';
+import { users, progressDB, wrongDB, favoriteDB, achievementDB } from './db.js';
 import jwt from 'jsonwebtoken';
 
 const app = express();
@@ -49,23 +49,22 @@ app.post('/api/v1/progress', authenticate, async (req, res) => {
       return res.status(400).json({ error: '缺少必要参数' });
     }
 
-    const progress = await progressDb.record(userId, module, itemId, itemType || 'default', score || 0);
+    const progress = await progressDB.upsert(userId, module, itemId, itemType || 'default', score || 0, 'completed');
 
     // 检查成就
-    const stats = await progressDb.getStats(userId);
-    const totalCompleted = stats.reduce((sum, s) => sum + parseInt(s.completed), 0);
+    const stats = await progressDB.getStats(userId);
 
-    if (totalCompleted === 1) {
-      await achievementDb.unlock(userId, 'first_step', '初学者', '完成第一个学习任务');
+    if (stats.totalQuestions === 1) {
+      await achievementDB.unlock(userId, 'first_step', '初学者', '完成第一个学习任务');
     }
-    if (totalCompleted === 10) {
-      await achievementDb.unlock(userId, 'active_learner', '活跃学习者', '完成10个学习任务');
+    if (stats.totalQuestions === 10) {
+      await achievementDB.unlock(userId, 'active_learner', '活跃学习者', '完成10个学习任务');
     }
-    if (totalCompleted === 50) {
-      await achievementDb.unlock(userId, 'expert', '学习专家', '完成50个学习任务');
+    if (stats.totalQuestions === 50) {
+      await achievementDB.unlock(userId, 'expert', '学习专家', '完成50个学习任务');
     }
 
-    res.json({ success: true, progress });
+    res.json({ success: true });
   } catch (error) {
     console.error('记录进度错误:', error);
     res.status(500).json({ error: '记录失败' });
@@ -76,11 +75,23 @@ app.post('/api/v1/progress', authenticate, async (req, res) => {
 app.get('/api/v1/progress', authenticate, async (req, res) => {
   try {
     const userId = req.userId;
-    const progress = await progressDb.getByUser(userId);
-    const stats = await progressDb.getStats(userId);
-    res.json({ success: true, progress, stats });
+    const progress = await progressDB.getByUser(userId);
+    const stats = await progressDB.getStats(userId);
+    res.json({ success: true, progress, ...stats });
   } catch (error) {
     console.error('获取进度错误:', error);
+    res.status(500).json({ error: '获取失败' });
+  }
+});
+
+// 获取用户统计
+app.get('/api/v1/progress/stats', authenticate, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const stats = await progressDB.getStats(userId);
+    res.json(stats);
+  } catch (error) {
+    console.error('获取统计错误:', error);
     res.status(500).json({ error: '获取失败' });
   }
 });
@@ -93,7 +104,7 @@ app.post('/api/v1/wrong-questions', authenticate, async (req, res) => {
     const { questionId, questionText, yourAnswer, correctAnswer, module } = req.body;
     const userId = req.userId;
 
-    const wrongQuestion = await wrongQuestionDb.add(userId, questionId, questionText, yourAnswer, correctAnswer, module);
+    const wrongQuestion = await wrongDB.add(userId, questionId, questionText, yourAnswer, correctAnswer, module);
     res.json({ success: true, wrongQuestion });
   } catch (error) {
     console.error('添加错题错误:', error);
@@ -105,7 +116,7 @@ app.post('/api/v1/wrong-questions', authenticate, async (req, res) => {
 app.get('/api/v1/wrong-questions', authenticate, async (req, res) => {
   try {
     const userId = req.userId;
-    const wrongQuestions = await wrongQuestionDb.getByUser(userId);
+    const wrongQuestions = await wrongDB.getByUser(userId);
     res.json({ success: true, wrongQuestions });
   } catch (error) {
     console.error('获取错题错误:', error);
@@ -118,7 +129,7 @@ app.delete('/api/v1/wrong-questions/:questionId', authenticate, async (req, res)
   try {
     const userId = req.userId;
     const { questionId } = req.params;
-    await wrongQuestionDb.remove(userId, questionId);
+    await wrongDB.remove(userId, questionId);
     res.json({ success: true });
   } catch (error) {
     console.error('删除错题错误:', error);

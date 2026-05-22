@@ -1,196 +1,184 @@
-import { Pool } from 'pg';
+import Database from 'better-sqlite3';
+import path from 'path';
 
-// PostgreSQL 连接配置
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'postgres',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || '',
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+// 使用SQLite数据库，文件存储在项目目录
+const dbPath = path.join(process.cwd(), 'data', 'app.db');
 
-// 测试连接
-pool.on('connect', () => {
-  console.log('✅ PostgreSQL 数据库连接成功');
-});
-
-pool.on('error', (err) => {
-  console.error('❌ PostgreSQL 连接错误:', err);
-});
-
-// 通用查询函数
-export async function query(text: string, params?: any[]) {
-  const start = Date.now();
-  const res = await pool.query(text, params);
-  const duration = Date.now() - start;
-  console.log('查询执行时间:', duration + 'ms', { rows: res.rowCount });
-  return res;
+// 确保data目录存在
+import fs from 'fs';
+const dataDir = path.join(process.cwd(), 'data');
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
 }
 
-// 用户相关
-export const userDb = {
-  // 创建用户
-  async create(username: string, password: string, nickname?: string) {
-    const result = await query(
-      'INSERT INTO users (username, password, nickname) VALUES ($1, $2, $3) RETURNING *',
-      [username, password, nickname || username]
-    );
-    return result.rows[0];
-  },
+const db = new Database(dbPath);
 
-  // 根据用户名查找
-  async findByUsername(username: string) {
-    const result = await query(
-      'SELECT * FROM users WHERE username = $1',
-      [username]
-    );
-    return result.rows[0];
-  },
+// 启用 WAL 模式提高性能
+db.pragma('journal_mode = WAL');
 
-  // 根据ID查找
-  async findById(id: number) {
-    const result = await query(
-      'SELECT id, username, nickname, created_at FROM users WHERE id = $1',
-      [id]
+// 创建表
+db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        nickname TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
-    return result.rows[0];
-  },
+
+    CREATE TABLE IF NOT EXISTS progress (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        module TEXT NOT NULL,
+        item_id TEXT,
+        item_type TEXT,
+        status TEXT DEFAULT 'in_progress',
+        score INTEGER DEFAULT 0,
+        completed_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS wrong_questions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        question_id TEXT NOT NULL,
+        question_text TEXT,
+        your_answer TEXT,
+        correct_answer TEXT,
+        module TEXT,
+        times_wrong INTEGER DEFAULT 1,
+        last_wrong_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS favorites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        item_id TEXT NOT NULL,
+        item_type TEXT,
+        title TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS achievements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        achievement_id TEXT NOT NULL,
+        title TEXT,
+        description TEXT,
+        unlocked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_progress_user ON progress(user_id);
+    CREATE INDEX IF NOT EXISTS idx_wrong_user ON wrong_questions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
+    CREATE INDEX IF NOT EXISTS idx_achievements_user ON achievements(user_id);
+`);
+
+// 用户操作
+export const userDB = {
+    create: (username: string, password: string, nickname?: string) => {
+        const stmt = db.prepare('INSERT INTO users (username, password, nickname) VALUES (?, ?, ?)');
+        const result = stmt.run(username, password, nickname || null);
+        return { id: result.lastInsertRowid, username, nickname };
+    },
+    findByUsername: (username: string) => {
+        const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
+        return stmt.get(username);
+    },
+    findById: (id: number) => {
+        const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
+        return stmt.get(id);
+    },
+    updatePassword: (id: number, password: string) => {
+        const stmt = db.prepare('UPDATE users SET password = ? WHERE id = ?');
+        return stmt.run(password, id);
+    }
 };
 
-// 学习进度相关
-export const progressDb = {
-  // 记录进度
-  async record(userId: number, module: string, itemId: string, itemType: string, score: number) {
-    const result = await query(
-      `INSERT INTO progress (user_id, module, item_id, item_type, score, status, completed_at)
-       VALUES ($1, $2, $3, $4, $5, 'completed', CURRENT_TIMESTAMP)
-       ON CONFLICT (user_id, module, item_id)
-       DO UPDATE SET score = $5, status = 'completed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-       RETURNING *`,
-      [userId, module, itemId, itemType, score]
-    );
-    return result.rows[0];
-  },
-
-  // 获取用户进度
-  async getByUser(userId: number) {
-    const result = await query(
-      'SELECT * FROM progress WHERE user_id = $1 ORDER BY updated_at DESC',
-      [userId]
-    );
-    return result.rows;
-  },
-
-  // 获取模块统计
-  async getStats(userId: number) {
-    const result = await query(
-      `SELECT module, COUNT(*) as total, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
-       FROM progress WHERE user_id = $1 GROUP BY module`,
-      [userId]
-    );
-    return result.rows;
-  },
+// 进度操作
+export const progressDB = {
+    upsert: (userId: number, module: string, itemId: string, itemType: string, score: number, status: string) => {
+        const stmt = db.prepare(`
+            INSERT INTO progress (user_id, module, item_id, item_type, score, status, completed_at)
+            VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+            ON CONFLICT(user_id, module, item_id) 
+            DO UPDATE SET score = ?, status = ?, completed_at = datetime('now'), updated_at = datetime('now')
+        `);
+        return stmt.run(userId, module, itemId, itemType, score, status, score, status);
+    },
+    getByUser: (userId: number) => {
+        const stmt = db.prepare('SELECT * FROM progress WHERE user_id = ? ORDER BY updated_at DESC');
+        return stmt.all(userId);
+    },
+    getStats: (userId: number) => {
+        const totalStmt = db.prepare('SELECT COUNT(*) as total, SUM(score) as totalScore FROM progress WHERE user_id = ?');
+        const wrongStmt = db.prepare('SELECT COUNT(*) as wrongCount FROM wrong_questions WHERE user_id = ?');
+        const total = totalStmt.get(userId) as any;
+        const wrong = wrongStmt.get(userId) as any;
+        
+        return {
+            totalQuestions: total?.total || 0,
+            totalScore: total?.totalScore || 0,
+            wrongCount: wrong?.wrongCount || 0,
+            correctRate: total?.total > 0 ? ((total.totalScore / (total.total * 100)) * 100) : 0
+        };
+    }
 };
 
-// 错题本相关
-export const wrongQuestionDb = {
-  // 添加错题
-  async add(userId: number, questionId: string, questionText: string, yourAnswer: string, correctAnswer: string, module: string) {
-    const result = await query(
-      `INSERT INTO wrong_questions (user_id, question_id, question_text, your_answer, correct_answer, module)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (user_id, question_id) 
-       DO UPDATE SET times_wrong = wrong_questions.times_wrong + 1, last_wrong_at = CURRENT_TIMESTAMP
-       RETURNING *`,
-      [userId, questionId, questionText, yourAnswer, correctAnswer, module]
-    );
-    return result.rows[0];
-  },
-
-  // 获取用户错题
-  async getByUser(userId: number) {
-    const result = await query(
-      'SELECT * FROM wrong_questions WHERE user_id = $1 ORDER BY last_wrong_at DESC',
-      [userId]
-    );
-    return result.rows;
-  },
-
-  // 删除错题（答对后）
-  async remove(userId: number, questionId: string) {
-    await query(
-      'DELETE FROM wrong_questions WHERE user_id = $1 AND question_id = $2',
-      [userId, questionId]
-    );
-  },
+// 错题操作
+export const wrongDB = {
+    add: (userId: number, questionId: string, questionText: string, yourAnswer: string, correctAnswer: string, module: string) => {
+        const existing = db.prepare('SELECT * FROM wrong_questions WHERE user_id = ? AND question_id = ?').get(userId, questionId);
+        if (existing) {
+            const stmt = db.prepare('UPDATE wrong_questions SET times_wrong = times_wrong + 1, last_wrong_at = datetime(\'now\'), your_answer = ? WHERE id = ?');
+            return stmt.run(yourAnswer, (existing as any).id);
+        } else {
+            const stmt = db.prepare('INSERT INTO wrong_questions (user_id, question_id, question_text, your_answer, correct_answer, module) VALUES (?, ?, ?, ?, ?, ?)');
+            return stmt.run(userId, questionId, questionText, yourAnswer, correctAnswer, module);
+        }
+    },
+    getByUser: (userId: number) => {
+        const stmt = db.prepare('SELECT * FROM wrong_questions WHERE user_id = ? ORDER BY last_wrong_at DESC');
+        return stmt.all(userId);
+    },
+    remove: (userId: number, questionId: string) => {
+        const stmt = db.prepare('DELETE FROM wrong_questions WHERE user_id = ? AND question_id = ?');
+        return stmt.run(userId, questionId);
+    }
 };
 
-// 收藏相关
-export const favoriteDb = {
-  // 添加收藏
-  async add(userId: number, itemId: string, itemType: string, title: string) {
-    const result = await query(
-      `INSERT INTO favorites (user_id, item_id, item_type, title)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (user_id, item_id, item_type) DO NOTHING
-       RETURNING *`,
-      [userId, itemId, itemType, title]
-    );
-    return result.rows[0];
-  },
-
-  // 获取用户收藏
-  async getByUser(userId: number) {
-    const result = await query(
-      'SELECT * FROM favorites WHERE user_id = $1 ORDER BY created_at DESC',
-      [userId]
-    );
-    return result.rows;
-  },
-
-  // 取消收藏
-  async remove(userId: number, itemId: string, itemType: string) {
-    await query(
-      'DELETE FROM favorites WHERE user_id = $1 AND item_id = $2 AND item_type = $3',
-      [userId, itemId, itemType]
-    );
-  },
-
-  // 检查是否已收藏
-  async isFavorited(userId: number, itemId: string, itemType: string) {
-    const result = await query(
-      'SELECT id FROM favorites WHERE user_id = $1 AND item_id = $2 AND item_type = $3',
-      [userId, itemId, itemType]
-    );
-    return result.rows.length > 0;
-  },
+// 收藏操作
+export const favoriteDB = {
+    add: (userId: number, itemId: string, itemType: string, title: string) => {
+        const stmt = db.prepare('INSERT INTO favorites (user_id, item_id, item_type, title) VALUES (?, ?, ?, ?)');
+        return stmt.run(userId, itemId, itemType, title);
+    },
+    getByUser: (userId: number) => {
+        const stmt = db.prepare('SELECT * FROM favorites WHERE user_id = ? ORDER BY created_at DESC');
+        return stmt.all(userId);
+    },
+    remove: (userId: number, itemId: string) => {
+        const stmt = db.prepare('DELETE FROM favorites WHERE user_id = ? AND item_id = ?');
+        return stmt.run(userId, itemId);
+    }
 };
 
-// 成就相关
-export const achievementDb = {
-  // 解锁成就
-  async unlock(userId: number, achievementId: string, title: string, description: string) {
-    const result = await query(
-      `INSERT INTO achievements (user_id, achievement_id, title, description)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (user_id, achievement_id) DO NOTHING
-       RETURNING *`,
-      [userId, achievementId, title, description]
-    );
-    return result.rows[0];
-  },
-
-  // 获取用户成就
-  async getByUser(userId: number) {
-    const result = await query(
-      'SELECT * FROM achievements WHERE user_id = $1 ORDER BY unlocked_at DESC',
-      [userId]
-    );
-    return result.rows;
-  },
+// 成就操作
+export const achievementDB = {
+    add: (userId: number, achievementId: string, title: string, description: string) => {
+        const stmt = db.prepare('INSERT INTO achievements (user_id, achievement_id, title, description) VALUES (?, ?, ?, ?)');
+        return stmt.run(userId, achievementId, title, description);
+    },
+    getByUser: (userId: number) => {
+        const stmt = db.prepare('SELECT * FROM achievements WHERE user_id = ? ORDER BY unlocked_at DESC');
+        return stmt.all(userId);
+    }
 };
 
-export default pool;
+export default db;

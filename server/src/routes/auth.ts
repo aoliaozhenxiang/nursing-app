@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
-import { userDb } from '../db.js';
+import { userDB } from '../db.js';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'nursing-app-secret-key-2024';
 
 // 注册
-router.post('/register', async (req, res) => {
+router.post('/register', (req, res) => {
   try {
     const { username, password, nickname } = req.body;
 
@@ -23,13 +23,13 @@ router.post('/register', async (req, res) => {
     }
 
     // 检查用户名是否已存在
-    const existingUser = await userDb.findByUsername(username);
+    const existingUser = userDB.findByUsername(username);
     if (existingUser) {
       return res.status(400).json({ error: '用户名已存在' });
     }
 
     // 创建用户（密码直接存储，生产环境应该加密）
-    const user = await userDb.create(username, password, nickname);
+    const user = userDB.create(username, password, nickname);
 
     // 生成token
     const token = jwt.sign(
@@ -48,15 +48,14 @@ router.post('/register', async (req, res) => {
         nickname: user.nickname
       }
     });
-
   } catch (error) {
     console.error('注册错误:', error);
-    res.status(500).json({ error: '注册失败' });
+    res.status(500).json({ error: '服务器错误' });
   }
 });
 
 // 登录
-router.post('/login', async (req, res) => {
+router.post('/login', (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -64,13 +63,12 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: '请输入用户名和密码' });
     }
 
-    // 查找用户
-    const user = await userDb.findByUsername(username);
+    const user = userDB.findByUsername(username);
     if (!user) {
       return res.status(401).json({ error: '用户名或密码错误' });
     }
 
-    // 验证密码（简单对比，生产环境应该加密验证）
+    // 简单密码验证（生产环境应该用bcrypt加密验证）
     if (user.password !== password) {
       return res.status(401).json({ error: '用户名或密码错误' });
     }
@@ -92,78 +90,37 @@ router.post('/login', async (req, res) => {
         nickname: user.nickname
       }
     });
-
   } catch (error) {
     console.error('登录错误:', error);
-    res.status(500).json({ error: '登录失败' });
+    res.status(500).json({ error: '服务器错误' });
   }
 });
 
 // 获取当前用户信息
-router.get('/me', async (req, res) => {
+router.get('/me', (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ error: '未登录' });
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: '未授权' });
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const user = userDB.findById(decoded.id);
 
-    const user = await userDb.findById(decoded.id);
     if (!user) {
-      return res.status(401).json({ error: '用户不存在' });
+      return res.status(404).json({ error: '用户不存在' });
     }
 
     res.json({
-      success: true,
-      user: {
-        id: user.id,
-        username: user.username,
-        nickname: user.nickname,
-        created_at: user.created_at
-      }
+      id: user.id,
+      username: user.username,
+      nickname: user.nickname,
+      created_at: user.created_at
     });
-
   } catch (error) {
     console.error('获取用户信息错误:', error);
-    res.status(401).json({ error: '登录已过期' });
-  }
-});
-
-// 更新用户信息
-router.put('/profile', async (req, res) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ error: '未登录' });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
-
-    const { nickname } = req.body;
-
-    await query(
-      'UPDATE users SET nickname = COALESCE($1, nickname) WHERE id = $2',
-      [nickname, decoded.id]
-    );
-
-    const user = await userDb.findById(decoded.id);
-
-    res.json({
-      success: true,
-      message: '更新成功',
-      user: {
-        id: user.id,
-        username: user.username,
-        nickname: user.nickname
-      }
-    });
-
-  } catch (error) {
-    console.error('更新用户信息错误:', error);
-    res.status(500).json({ error: '更新失败' });
+    res.status(500).json({ error: '服务器错误' });
   }
 });
 
