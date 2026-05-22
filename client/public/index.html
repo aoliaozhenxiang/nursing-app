@@ -6,8 +6,6 @@
     <title>慈航护理学堂 · 养老护理四级培训助手</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://cdn.jsdelivr/npm/chart.js@4.4.0/dist/chart.umd.min.js">    }
-</script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -443,7 +441,7 @@
             <h1><i class="fas fa-hand-holding-heart"></i> 慈航护理学堂</h1>
             <div>AI赋能 · 四级/中级工认定培训</div>
         </div>
-        <button class="btn-grad" onclick="showSection('profile')"><i class="fas fa-user"></i> 我的</button>
+        <div id="authButtons"><button class="btn-grad" onclick="location.href='login.html'" id="loginBtn"><i class="fas fa-sign-in-alt"></i> 登录</button></div>
     </nav>
 
     <!-- Hero区 -->
@@ -1450,6 +1448,19 @@
             [arr[i], arr[j]] = [arr[j], arr[i]];
         }
     }
+        // 检查登录状态
+        if(localStorage.getItem('token')) {
+            var user = JSON.parse(localStorage.getItem('user') || '{}');
+            var authDiv = document.getElementById('authButtons');
+            if(authDiv) {
+                authDiv.innerHTML = '<div style="display:flex;align-items:center;gap:12px;"><span style="color:#2a9d8f;font-weight:600;">' + (user.nickname || user.username) + '</span><button class="btn-grad" onclick="logout()" style="padding:10px 20px;font-size:0.9rem;"><i class="fas fa-sign-out-alt"></i> 退出</button></div>';
+            }
+        }
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            location.reload();
+        }
 </script>
 </body>
 </html>
