@@ -1276,31 +1276,38 @@
     function startGame(type) {
         alert('步骤1: type=' + type);
         currentGame = type;
+        alert('步骤2: 准备获取pages');
         const pages = ['mainPage', 'theoryPage', 'practicePage', 'examPage', 'aiPage', 'profilePage', 'gamePage'];
-        pages.forEach(p => document.getElementById(p).style.display = 'none');
-        alert('步骤2: gamePage显示中');
+        alert('步骤3: pages=' + pages.length);
+        alert('步骤4: 开始循环');
+        for(let i=0; i<pages.length; i++) {
+            const p = pages[i];
+            alert('步骤4.' + (i+1) + ': 处理' + p);
+            document.getElementById(p).style.display = 'none';
+        }
+        alert('步骤5: gamePage显示');
         document.getElementById('gamePage').style.display = 'block';
-        alert('步骤3: 准备加载游戏, type=' + type);
+        alert('步骤6: 准备加载游戏, type=' + type);
 
         document.getElementById('sortGame').style.display = 'none';
         document.getElementById('matchGame').style.display = 'none';
         document.getElementById('quizGame').style.display = 'none';
 
         if (type === 'sort') {
-            alert('步骤4: 进入sort分支');
+            alert('步骤7: 进入sort分支');
             document.getElementById('gameTitle').textContent = '排序记忆';
             document.getElementById('gameSubtitle').textContent = '护理步骤排序';
             document.getElementById('sortGame').style.display = 'block';
-            alert('步骤5: 调用initSortGame');
+            alert('步骤8: 调用initSortGame');
             initSortGame();
         } else if (type === 'match') {
-            alert('步骤4: 进入match分支');
+            alert('步骤7: 进入match分支');
             document.getElementById('gameTitle').textContent = '连连看';
             document.getElementById('gameSubtitle').textContent = '知识点匹配';
             document.getElementById('matchGame').style.display = 'block';
             initMatchGame();
         } else if (type === 'quiz') {
-            alert('步骤4: 进入quiz分支');
+            alert('步骤7: 进入quiz分支');
             document.getElementById('gameTitle').textContent = '速答挑战';
             document.getElementById('gameSubtitle').textContent = '限时答题';
             document.getElementById('quizGame').style.display = 'block';
