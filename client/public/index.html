@@ -385,7 +385,7 @@
         /* 页面内容留白 */
         .page-content { padding-bottom: 80px; }
         #gamePage { display: none; }
-        .page-content[style*="display: none"] { display: none !important; }
+        
 
         /* Tab切换 */
         .tab-bar {
@@ -1134,7 +1134,8 @@
 
 <script>
     // 页面切换
-    function showSection(section) { alert('切换到: ' + section); // showSection called
+    function showSection(section) { // showSection: section
+        console.log('切换到:', section); // showSection called
         const pages = ['mainPage', 'theoryPage', 'practicePage', 'examPage', 'aiPage', 'profilePage'];
         pages.forEach(p => {
             document.getElementById(p).style.display = 'none';
