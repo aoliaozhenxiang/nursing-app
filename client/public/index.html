@@ -599,20 +599,76 @@
             </div>
             <div class="game-card" onclick="startGame('match')">
                 <i class="fas fa-link"></i>
-                <h4>连连看 <span class="badge">HOT</span></h4>
+                <h4>连连看 <span class="badge">NEW</span></h4>
                 <span>匹配相关知识点</span>
             </div>
-            <div class="game-card locked">
-                <i class="fas fa-puzzle-piece"></i>
-                <h4>拼图游戏</h4>
-                <span>完成解锁</span>
-            </div>
-            <div class="game-card locked">
+            <div class="game-card" onclick="startGame('quiz')">
                 <i class="fas fa-bolt"></i>
-                <h4>速答挑战</h4>
-                <span>完成解锁</span>
+                <h4>速答挑战 <span class="badge">NEW</span></h4>
+                <span>限时答题</span>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- ==================== 游戏页 ==================== -->
+<div id="gamePage" class="container page-content" style="display: none;">
+    <nav class="navbar">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <i class="fas fa-arrow-left" style="font-size: 1.2rem; cursor: pointer;" onclick="showSection('home')"></i>
+            <div class="logo">
+                <h1 id="gameTitle">闯关游戏</h1>
+                <div id="gameSubtitle">记忆闯关</div>
+            </div>
+        </div>
+        <div style="text-align: right;">
+            <div style="font-size: 1.5rem; font-weight: 700; color: #2a9d8f;" id="gameScore">0</div>
+            <div style="font-size: 0.75rem; color: #6a8a81;">得分</div>
+        </div>
+    </nav>
+
+    <!-- 排序游戏 -->
+    <div id="sortGame" class="card" style="display: none;">
+        <h3><i class="fas fa-list-ol"></i> 护理步骤排序</h3>
+        <p style="font-size: 0.85rem; color: #4a6a61; margin: 10px 0 16px;">将以下操作步骤按正确顺序排列</p>
+        <div style="background: #f0f7f4; border-radius: 16px; padding: 16px; margin-bottom: 16px;">
+            <p style="font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">题目：为卧床老人进行口腔护理，正确的操作顺序是？</p>
+        </div>
+        <div id="sortItems" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+        </div>
+        <button class="btn-grad" style="width: 100%;" onclick="checkSortAnswer()">提交答案</button>
+        <div id="sortResult" style="margin-top: 16px; padding: 12px; border-radius: 12px; display: none;"></div>
+    </div>
+
+    <!-- 连连看游戏 -->
+    <div id="matchGame" class="card" style="display: none;">
+        <h3><i class="fas fa-link"></i> 知识点连连看</h3>
+        <p style="font-size: 0.85rem; color: #4a6a61; margin: 10px 0 16px;">点击两个卡片，如果匹配就消除</p>
+        <div id="matchGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+        </div>
+        <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div>剩余: <span id="matchRemaining" style="font-weight: 700; color: #2a9d8f;">8</span></div>
+            <button class="btn-grad" onclick="initMatchGame()">重新开始</button>
+        </div>
+    </div>
+
+    <!-- 速答题游戏 -->
+    <div id="quizGame" class="card" style="display: none;">
+        <h3><i class="fas fa-bolt"></i> 速答挑战</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 12px 0;">
+            <div style="background: #fff3e0; padding: 8px 16px; border-radius: 20px;">
+                ⏱️ <span id="quizTimer" style="font-weight: 700; color: #e65100;">30</span>秒
+            </div>
+            <div style="background: #e8f4f0; padding: 8px 16px; border-radius: 20px;">
+                得分: <span id="quizScore" style="font-weight: 700; color: #2a9d8f;">0</span>
+            </div>
+        </div>
+        <div id="quizQuestion" style="background: #f8fdfb; border-radius: 16px; padding: 16px; margin-bottom: 16px;">
+            <p style="font-size: 0.9rem; font-weight: 600;"></p>
+        </div>
+        <div id="quizOptions" style="display: flex; flex-direction: column; gap: 10px;">
+        </div>
+        <div id="quizResult" style="margin-top: 16px; padding: 12px; border-radius: 12px; display: none; text-align: center;"></div>
     </div>
 </div>
 
@@ -1099,6 +1155,9 @@
         if (sectionMap[section] !== undefined) {
             navItems[sectionMap[section]].classList.add('active');
         }
+        if (section !== 'home') {
+            navItems.forEach(item => item.classList.remove('active'));
+        }
 
         window.scrollTo(0, 0);
     }
@@ -1205,9 +1264,250 @@
         }
     });
 
-    // 闯关游戏（模拟）
+    // 闯关游戏
+    let currentGame = '';
+    let score = 0;
+
     function startGame(type) {
-        alert('🎮 ' + (type === 'sort' ? '排序记忆' : '连连看') + '游戏即将开启！\n\n功能开发中，敬请期待...');
+        currentGame = type;
+        const pages = ['mainPage', 'theoryPage', 'practicePage', 'examPage', 'aiPage', 'profilePage', 'gamePage'];
+        pages.forEach(p => document.getElementById(p).style.display = 'none');
+        document.getElementById('gamePage').style.display = 'block';
+
+        document.getElementById('sortGame').style.display = 'none';
+        document.getElementById('matchGame').style.display = 'none';
+        document.getElementById('quizGame').style.display = 'none';
+
+        if (type === 'sort') {
+            document.getElementById('gameTitle').textContent = '排序记忆';
+            document.getElementById('gameSubtitle').textContent = '护理步骤排序';
+            document.getElementById('sortGame').style.display = 'block';
+            initSortGame();
+        } else if (type === 'match') {
+            document.getElementById('gameTitle').textContent = '连连看';
+            document.getElementById('gameSubtitle').textContent = '知识点匹配';
+            document.getElementById('matchGame').style.display = 'block';
+            initMatchGame();
+        } else if (type === 'quiz') {
+            document.getElementById('gameTitle').textContent = '速答挑战';
+            document.getElementById('gameSubtitle').textContent = '限时答题';
+            document.getElementById('quizGame').style.display = 'block';
+            initQuizGame();
+        }
+        window.scrollTo(0, 0);
+    }
+
+    // 排序游戏
+    const sortQuestions = [
+        { items: ['评估老人状况', '准备口腔护理用物', '协助老人漱口', '按顺序擦拭口腔', '整理用物记录'], answer: [0,1,2,3,4] }
+    ];
+    let currentSortQuestion = 0;
+    let sortUserAnswer = [];
+
+    function initSortGame() {
+        const q = sortQuestions[0];
+        sortUserAnswer = [0,1,2,3,4].sort(() => Math.random() - 0.5);
+        const container = document.getElementById('sortItems');
+        container.innerHTML = '';
+        sortUserAnswer.forEach((idx, i) => {
+            const item = document.createElement('div');
+            item.className = 'chapter-item';
+            item.style.cursor = 'pointer';
+            item.innerHTML = '<span style="background:#2a9d8f;color:white;padding:4px 10px;border-radius:8px;margin-right:10px;">' + (i+1) + '</span>' + q.items[idx];
+            item.onclick = () => moveSortItem(i);
+            item.dataset.idx = i;
+            item.dataset.original = idx;
+            container.appendChild(item);
+        });
+        document.getElementById('sortResult').style.display = 'none';
+    }
+
+    function moveSortItem(idx) {
+        const container = document.getElementById('sortItems');
+        const items = container.children;
+        if (idx > 0) {
+            const temp = sortUserAnswer[idx];
+            sortUserAnswer[idx] = sortUserAnswer[idx-1];
+            sortUserAnswer[idx-1] = temp;
+        } else {
+            const temp = sortUserAnswer[0];
+            sortUserAnswer.shift();
+            sortUserAnswer.push(temp);
+        }
+        renderSortItems();
+    }
+
+    function renderSortItems() {
+        const q = sortQuestions[0];
+        const container = document.getElementById('sortItems');
+        container.innerHTML = '';
+        sortUserAnswer.forEach((idx, i) => {
+            const item = document.createElement('div');
+            item.className = 'chapter-item';
+            item.style.cursor = 'pointer';
+            item.innerHTML = '<span style="background:#2a9d8f;color:white;padding:4px 10px;border-radius:8px;margin-right:10px;">' + (i+1) + '</span>' + q.items[idx];
+            item.onclick = () => moveSortItem(i);
+            container.appendChild(item);
+        });
+    }
+
+    function checkSortAnswer() {
+        const q = sortQuestions[0];
+        let correct = true;
+        for (let i = 0; i < 5; i++) {
+            if (sortUserAnswer[i] !== q.answer[i]) correct = false;
+        }
+        const result = document.getElementById('sortResult');
+        result.style.display = 'block';
+        if (correct) {
+            result.style.background = '#f0fff4';
+            result.style.color = '#2f855a';
+            result.innerHTML = '🎉 正确！操作顺序完全正确！<br><br><button class="btn-grad" onclick="initSortGame()">再来一题</button>';
+            score += 20;
+            document.getElementById('gameScore').textContent = score;
+        } else {
+            result.style.background = '#fff5f5';
+            result.style.color = '#c53030';
+            result.innerHTML = '❌ 顺序不对！正确顺序是：<br>1. 评估老人状况 → 2. 准备用物 → 3. 协助漱口 → 4. 擦拭口腔 → 5. 整理记录<br><br><button class="btn-grad" onclick="initSortGame()">重新挑战</button>';
+        }
+    }
+
+    // 连连看游戏
+    const matchPairs = [
+        { left: '压疮', right: '减压翻身' },
+        { left: '鼻饲', right: '半卧位' },
+        { left: '噎食', right: '海姆立克' },
+        { left: '发热', right: '物理降温' }
+    ];
+    let matchCards = [];
+    let selectedCards = [];
+    let matchCount = 0;
+
+    function initMatchGame() {
+        matchCards = [];
+        matchCount = 0;
+        selectedCards = [];
+        matchPairs.forEach((p, i) => {
+            matchCards.push({ id: i*2, text: p.left, pair: i, type: 'left' });
+            matchCards.push({ id: i*2+1, text: p.right, pair: i, type: 'right' });
+        });
+        matchCards.sort(() => Math.random() - 0.5);
+        renderMatchCards();
+        document.getElementById('matchRemaining').textContent = '8';
+    }
+
+    function renderMatchCards() {
+        const grid = document.getElementById('matchGrid');
+        grid.innerHTML = '';
+        matchCards.forEach((card, i) => {
+            const div = document.createElement('div');
+            div.className = 'compare-card';
+            div.style.width = 'auto';
+            div.style.cursor = 'pointer';
+            div.style.opacity = card.matched ? '0.3' : '1';
+            div.innerHTML = '<div class="compare-img" style="height:60px;font-size:0.8rem;">' + card.text + '</div>';
+            if (!card.matched) {
+                div.onclick = () => selectMatchCard(i);
+            }
+            grid.appendChild(div);
+        });
+    }
+
+    function selectMatchCard(idx) {
+        if (selectedCards.length >= 2) return;
+        selectedCards.push(idx);
+        const grid = document.getElementById('matchGrid');
+        const divs = grid.children;
+        divs[idx].style.border = '2px solid #2a9d8f';
+
+        if (selectedCards.length === 2) {
+            const [a, b] = selectedCards;
+            if (matchCards[a].pair === matchCards[b].pair && matchCards[a].type !== matchCards[b].type) {
+                matchCards[a].matched = true;
+                matchCards[b].matched = true;
+                matchCount++;
+                document.getElementById('matchRemaining').textContent = 8 - matchCount * 2;
+                score += 10;
+                document.getElementById('gameScore').textContent = score;
+                setTimeout(() => {
+                    selectedCards = [];
+                    renderMatchCards();
+                    if (matchCount === 4) {
+                        alert('🎉 恭喜通关！得分: ' + score);
+                    }
+                }, 500);
+            } else {
+                setTimeout(() => {
+                    selectedCards = [];
+                    renderMatchCards();
+                }, 800);
+            }
+        }
+    }
+
+    // 速答题游戏
+    const quizQuestions = [
+        { q: '为卧床老人翻身间隔时间应为多少小时？', options: ['1小时', '2小时', '3小时', '4小时'], correct: 1 },
+        { q: '鼻饲时老人应采取什么体位？', options: ['平卧位', '侧卧位', '半卧位', '俯卧位'], correct: 2 },
+        { q: '压疮的好发部位不包括？', options: ['骶尾部', '足跟', '胸部', '髋部'], correct: 2 },
+        { q: '测量体温的正确部位是？', options: ['口腔', '腋下', '肛门', '以上都是'], correct: 3 }
+    ];
+    let quizTimer = null;
+    let quizTimeLeft = 30;
+    let quizCurrentQ = 0;
+    let quizScoreNum = 0;
+
+    function initQuizGame() {
+        quizScoreNum = 0;
+        quizCurrentQ = 0;
+        quizTimeLeft = 30;
+        document.getElementById('quizScore').textContent = '0';
+        document.getElementById('quizTimer').textContent = '30';
+        showQuizQuestion();
+        if (quizTimer) clearInterval(quizTimer);
+        quizTimer = setInterval(() => {
+            quizTimeLeft--;
+            document.getElementById('quizTimer').textContent = quizTimeLeft;
+            if (quizTimeLeft <= 0) {
+                clearInterval(quizTimer);
+                document.getElementById('quizResult').style.display = 'block';
+                document.getElementById('quizResult').style.background = '#fff3e0';
+                document.getElementById('quizResult').innerHTML = '⏱️ 时间到！<br>你的得分：' + quizScoreNum + '分';
+            }
+        }, 1000);
+    }
+
+    function showQuizQuestion() {
+        if (quizCurrentQ >= quizQuestions.length) {
+            clearInterval(quizTimer);
+            document.getElementById('quizResult').style.display = 'block';
+            document.getElementById('quizResult').style.background = '#f0fff4';
+            document.getElementById('quizResult').innerHTML = '🎉 全部答完！<br>你的得分：' + quizScoreNum + '分<br><button class="btn-grad" onclick="initQuizGame()">再来一次</button>';
+            return;
+        }
+        const q = quizQuestions[quizCurrentQ];
+        document.getElementById('quizQuestion').innerHTML = '<p style="font-size: 0.9rem; font-weight: 600;">第' + (quizCurrentQ+1) + '题：' + q.q + '</p>';
+        const optionsDiv = document.getElementById('quizOptions');
+        optionsDiv.innerHTML = '';
+        q.options.forEach((opt, i) => {
+            const btn = document.createElement('button');
+            btn.style.cssText = 'padding: 14px; border-radius: 16px; border: 1px solid #deeae5; background: white; text-align: left; cursor: pointer; font-size: 0.9rem;';
+            btn.innerHTML = '<span style="background: #e8f4f0; padding: 4px 10px; border-radius: 8px; margin-right: 8px;">' + String.fromCharCode(65+i) + '</span>' + opt;
+            btn.onclick = () => selectQuizAnswer(i, q.correct);
+            optionsDiv.appendChild(btn);
+        });
+        document.getElementById('quizResult').style.display = 'none';
+    }
+
+    function selectQuizAnswer(selected, correct) {
+        if (selected === correct) {
+            quizScoreNum += 10;
+            document.getElementById('quizScore').textContent = quizScoreNum;
+            score += 10;
+            document.getElementById('gameScore').textContent = score;
+        }
+        quizCurrentQ++;
+        setTimeout(showQuizQuestion, 300);
     }
 </script>
 
