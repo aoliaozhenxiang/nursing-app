@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth.js';
+import aiRoutes from './routes/ai.js';
 import { users, progressDB, wrongDB, favoriteDB, achievementDB } from './db.js';
 import jwt from 'jsonwebtoken';
 
@@ -19,6 +20,9 @@ app.get('/api/v1/health', (req, res) => {
 
 // Auth routes
 app.use('/api/v1/auth', authRoutes);
+
+// AI 对话和分析路由
+app.use('/api/v1/ai', aiRoutes);
 
 // 中间件：验证登录
 function authenticate(req: any, res: any, next: any) {

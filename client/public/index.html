@@ -1280,35 +1280,62 @@
     }
 
     // AI问答
-    const mockAnswers = {
-        "口腔护理": "口腔护理操作要点：1. 评估老人意识及配合程度；2. 准备棉球、漱口水；3. 按顺序擦拭牙齿、舌面、硬腭；4. 昏迷老人禁止漱口。",
-        "鼻饲": "鼻饲护理：每次灌食前需确认胃管位置，灌食量≤200ml，速度缓慢，温度38-40℃，灌食后保持半卧位30分钟。",
-        "压疮": "压疮预防：每2小时翻身一次，使用减压气垫，保持皮肤清洁干燥，加强营养，骨突处贴敷料。",
-        "噎食": "噎食急救：立即采用海姆立克法（腹部冲击），清醒老人背后环抱，一手握拳置于肚脐上方，另一手包住拳头快速向内向上冲击。"
-    };
+    const API_BASE = 'http://8.136.210.255:9091/api/v1';
+    let chatMessages = [];
 
     function sendQuestion() {
         const input = document.getElementById('userQuestion');
         const question = input.value.trim();
         if (!question) return;
+        
+        // 检查登录状态
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('请先登录后再使用AI问答功能');
+            location.href = 'login.html';
+            return;
+        }
+
         addChatBubble(question, true);
-        const reply = getAIResponse(question);
-        setTimeout(() => { addChatBubble(reply, false); }, 500);
+        chatMessages.push({ role: 'user', content: question });
         input.value = '';
+        
+        // 添加加载状态
+        const loadingBubble = document.createElement('div');
+        loadingBubble.className = 'chat-bubble';
+        loadingBubble.id = 'aiLoading';
+        loadingBubble.innerHTML = '<strong>🤖 AI导师</strong><br><span style="color:#6a8a81">思考中...</span>';
+        document.getElementById('chatHistory').appendChild(loadingBubble);
+        document.getElementById('chatHistory').scrollTop = document.getElementById('chatHistory').scrollHeight;
+
+        fetch(`${API_BASE}/ai/chat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ messages: chatMessages })
+        })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('aiLoading')?.remove();
+            if (data.success) {
+                addChatBubble(data.content, false);
+                chatMessages.push({ role: 'assistant', content: data.content });
+            } else {
+                addChatBubble('抱歉，AI回复失败了，请稍后重试。', false);
+            }
+        })
+        .catch(err => {
+            document.getElementById('aiLoading')?.remove();
+            addChatBubble('网络错误，请检查网络连接后重试。', false);
+            console.error(err);
+        });
     }
 
     function quickQuestion(q) {
         document.getElementById('userQuestion').value = q;
         sendQuestion();
-    }
-
-    function getAIResponse(question) {
-        let lowerQ = question.toLowerCase();
-        if (lowerQ.includes("口腔")) return mockAnswers["口腔护理"];
-        if (lowerQ.includes("鼻饲")) return mockAnswers["鼻饲"];
-        if (lowerQ.includes("压疮") || lowerQ.includes("褥疮")) return mockAnswers["压疮"];
-        if (lowerQ.includes("噎食") || lowerQ.includes("窒息")) return mockAnswers["噎食"];
-        return "根据《养老护理员国家职业技能标准》，您提到的操作需要遵循「安全、舒适、尊重」原则。具体可参考教材对应章节。如需更精准指导，请详细描述您的问题。";
     }
 
     function addChatBubble(text, isUser) {

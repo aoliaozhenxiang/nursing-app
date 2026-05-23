@@ -130,6 +130,23 @@
                 </div>
             </div>
         </div>
+
+        <div class="card" style="background: linear-gradient(145deg, #f8fdfb, #e8f4f0);">
+            <h3><i class="fas fa-robot" style="color:#2a9d8f"></i> AI学习分析报告</h3>
+            <p style="font-size:0.85rem;color:#4a6a61;margin:10px 0;">基于您的做题数据，AI将生成个性化的学习分析报告</p>
+            <button onclick="generateAnalysis()" id="analyzeBtn" style="width:100%;padding:14px;background:linear-gradient(105deg, #2a9d8f, #1e6f62);color:white;border:none;border-radius:48px;font-size:1rem;font-weight:600;cursor:pointer;box-shadow:0 6px 16px rgba(42,157,143,0.3);">
+                <i class="fas fa-chart-pie"></i> 生成AI分析报告
+            </button>
+            <div id="analysisResult" style="margin-top:16px;display:none;">
+                <div style="background:white;border-radius:16px;padding:16px;max-height:400px;overflow-y:auto;">
+                    <div id="analysisContent" style="font-size:0.9rem;line-height:1.8;"></div>
+                </div>
+            </div>
+            <div id="analysisLoading" style="display:none;text-align:center;padding:20px;">
+                <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;color:#2a9d8f;"></i>
+                <p style="margin-top:10px;color:#6a8a81;">AI正在分析您的学习数据...</p>
+            </div>
+        </div>
     </div>
 
     <div class="bottom-nav">
@@ -217,4 +234,96 @@ document.addEventListener('DOMContentLoaded', function() {
     loadStats();
     loadWrongQuestions();
 });
+
+// 生成AI分析报告
+async function generateAnalysis() {
+    const token = checkAuth();
+    if (!token) return;
+
+    const btn = document.getElementById('analyzeBtn');
+    const loading = document.getElementById('analysisLoading');
+    const result = document.getElementById('analysisResult');
+    const content = document.getElementById('analysisContent');
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 分析中...';
+    loading.style.display = 'block';
+    result.style.display = 'none';
+
+    try {
+        // 获取用户的做题数据和错题
+        const [progressRes, wrongRes] = await Promise.all([
+            fetch(API_BASE + '/progress', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            }),
+            fetch(API_BASE + '/wrong-questions', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+        ]);
+
+        const progressData = await progressRes.json();
+        const wrongData = await wrongRes.json();
+
+        // 准备分析数据
+        const totalQuestions = progressData.totalQuestions || 0;
+        const correctCount = progressData.totalCorrect || 0;
+        const wrongQuestions = (wrongData.wrong_questions || []).slice(0, 10).map(q => ({
+            question: q.question_text || '未知题目',
+            userAnswer: q.user_answer || '未作答',
+            correctAnswer: q.correct_answer || '未知',
+            category: q.category || '未分类'
+        }));
+
+        // 按分类统计
+        const categoryStats = {};
+        if (progressData.progress) {
+            progressData.progress.forEach(p => {
+                const cat = p.module || '其他';
+                if (!categoryStats[cat]) {
+                    categoryStats[cat] = { total: 0, correct: 0 };
+                }
+                categoryStats[cat].total++;
+                if (p.status === 'correct' || p.score >= 60) {
+                    categoryStats[cat].correct++;
+                }
+            });
+        }
+
+        // 调用AI分析API
+        const analyzeRes = await fetch(API_BASE + '/ai/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({
+                totalQuestions,
+                correctCount,
+                wrongQuestions,
+                categoryStats
+            })
+        });
+
+        const analyzeData = await analyzeRes.json();
+
+        loading.style.display = 'none';
+        result.style.display = 'block';
+        
+        if (analyzeData.success) {
+            // 渲染报告（支持换行）
+            content.innerHTML = analyzeData.report.replace(/\n/g, '<br>');
+        } else {
+            content.innerHTML = '<p style="color:#e76f51;">生成报告失败，请稍后重试。</p>';
+        }
+
+    } catch (err) {
+        console.error('分析失败:', err);
+        loading.style.display = 'none';
+        result.style.display = 'block';
+        content.innerHTML = '<p style="color:#e76f51;">网络错误，请检查网络后重试。</p>';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-chart-pie"></i> 重新生成分析报告';
+    }
+}
 </script>
