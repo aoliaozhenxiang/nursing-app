@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth.js';
 import aiRoutes from './routes/ai.js';
-import { users, progressDB, wrongDB, favoriteDB, achievementDB } from './db.js';
+import { userDB, progressDB, wrongDB, favoriteDB, achievementDB } from './db.js';
 import jwt from 'jsonwebtoken';
 
 const app = express();
