@@ -47,15 +47,15 @@
             <h3><i class="fas fa-chart-bar" style="color:#2a9d8f"></i> 学习统计</h3>
             <div class="stats-row">
                 <div class="stat-box">
-                    <div class="stat-num">128</div>
+                    <div class="stat-num" id="examTotalQuestions">0</div>
                     <div class="stat-label">已做题目</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-num">85%</div>
+                    <div class="stat-num" id="examCorrectRate">0%</div>
                     <div class="stat-label">正确率</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-num">32</div>
+                    <div class="stat-num" id="examWrongCount">0</div>
                     <div class="stat-label">错题数</div>
                 </div>
             </div>
@@ -198,9 +198,9 @@ async function loadStats() {
         });
         const data = await res.json();
         
-        document.querySelector('.stat-num').textContent = data.totalQuestions || 0;
-        document.querySelectorAll('.stat-box .stat-num')[1].textContent = data.correctRate ? Math.round(data.correctRate) + '%' : '0%';
-        document.querySelectorAll('.stat-box .stat-num')[2].textContent = data.wrongCount || 0;
+        document.getElementById('examTotalQuestions').textContent = data.totalQuestions || 0;
+        document.getElementById('examCorrectRate').textContent = data.correctRate ? Math.round(data.correctRate) + '%' : '0%';
+        document.getElementById('examWrongCount').textContent = data.wrongCount || 0;
     } catch (err) {
         console.error('加载统计失败:', err);
     }

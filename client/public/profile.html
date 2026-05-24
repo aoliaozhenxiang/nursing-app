@@ -59,19 +59,19 @@
             </div>
             <div class="stats-grid">
                 <div class="stat-item">
-                    <div class="stat-num">12h</div>
+                    <div class="stat-num" id="profileStudyTime">0h</div>
                     <div class="stat-label">学习时长</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-num">128</div>
+                    <div class="stat-num" id="profileQuestionCount">0</div>
                     <div class="stat-label">刷题数</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-num">85%</div>
+                    <div class="stat-num" id="profileCorrectRate">0%</div>
                     <div class="stat-label">正确率</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-num">3</div>
+                    <div class="stat-num" id="profileBadgeCount">0</div>
                     <div class="stat-label">徽章</div>
                 </div>
             </div>
@@ -79,10 +79,8 @@
 
         <div class="card">
             <h3><i class="fas fa-trophy" style="color:#ffd700"></i> 成就徽章</h3>
-            <div class="badge-grid">
-                <div class="badge"><i class="fas fa-star"></i> 初学者</div>
-                <div class="badge"><i class="fas fa-fire"></i> 连续学习7天</div>
-                <div class="badge"><i class="fas fa-brain"></i> 答题达人</div>
+            <div class="badge-grid" id="badgeGrid">
+                <!-- 动态加载 -->
             </div>
         </div>
 
@@ -154,6 +152,87 @@
 <script>
 const API_BASE = 'http://8.136.210.255:9091/api/v1';
 
+// 加载个人中心统计数据
+async function loadProfileStats() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        // 并行获取统计数据和成就
+        const [statsRes, achievementsRes] = await Promise.all([
+            fetch(`${API_BASE}/progress/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }),
+            fetch(`${API_BASE}/achievements`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+        ]);
+        
+        // 处理统计数据
+        if (statsRes.ok) {
+            const stats = await statsRes.json();
+            const totalQuestions = stats.totalQuestions || 0;
+            const correctRate = stats.correctRate || 0;
+            const totalMinutes = stats.totalMinutes || (totalQuestions * 2);
+            const totalHours = Math.round(totalMinutes / 60 * 10) / 10;
+            
+            document.getElementById('profileStudyTime').textContent = totalHours + 'h';
+            document.getElementById('profileQuestionCount').textContent = totalQuestions;
+            document.getElementById('profileCorrectRate').textContent = Math.round(correctRate) + '%';
+        }
+        
+        // 处理成就徽章
+        if (achievementsRes.ok) {
+            const achievementsData = await achievementsRes.json();
+            const achievements = achievementsData.achievements || [];
+            
+            document.getElementById('profileBadgeCount').textContent = achievements.length;
+            renderBadges(achievements);
+        }
+    } catch (e) {
+        console.error('加载统计数据失败:', e);
+    }
+}
+
+// 渲染徽章列表
+function renderBadges(achievements) {
+    const badgeGrid = document.getElementById('badgeGrid');
+    if (!badgeGrid) return;
+    
+    if (achievements.length === 0) {
+        badgeGrid.innerHTML = '<p style="color:#6a8a81;font-size:0.85rem;">暂无成就，继续努力学习吧！</p>';
+        return;
+    }
+    
+    badgeGrid.innerHTML = achievements.map(a => `
+        <div class="badge">
+            <i class="fas ${getBadgeIcon(a.type)}"></i>
+            ${a.name || '成就徽章'}
+        </div>
+    `).join('');
+}
+
+// 获取徽章图标
+function getBadgeIcon(type) {
+    const iconMap = {
+        '初学者': 'fa-star',
+        '学习': 'fa-book',
+        '连续': 'fa-fire',
+        '达人': 'fa-brain',
+        '冠军': 'fa-trophy',
+        '满分': 'fa-check-circle',
+        '坚持': 'fa-medal',
+        '突破': 'fa-bolt',
+        '优秀': 'fa-award',
+        '通关': 'fa-flag-checkered'
+    };
+    
+    for (const [key, icon] of Object.entries(iconMap)) {
+        if (type && type.includes(key)) return icon;
+    }
+    return 'fa-medal';
+}
+
 // 检查登录状态并显示用户信息
 function loadUserInfo() {
     const userStr = localStorage.getItem('user');
@@ -166,30 +245,11 @@ function loadUserInfo() {
     
     if (userStr) {
         const user = JSON.parse(userStr);
-        document.getElementById('username').textContent = user.username || '未设置';
-        document.getElementById('nickname').textContent = user.nickname || user.username || '未设置';
+        const nameEl = document.querySelector('.profile-info h3');
+        if (nameEl) nameEl.textContent = user.nickname || user.username || '护理学员';
     }
     
-    loadStats();
-}
-
-// 获取用户统计
-async function loadStats() {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    
-    try {
-        const res = await fetch(API_BASE + '/progress/stats', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
-        const data = await res.json();
-        
-        document.getElementById('totalTime').textContent = (data.totalTime || 0) + '分钟';
-        document.getElementById('correctRate').textContent = data.correctRate ? Math.round(data.correctRate) + '%' : '0%';
-        document.getElementById('rank').textContent = '#' + (data.rank || '--');
-    } catch (err) {
-        console.error('加载统计失败:', err);
-    }
+    loadProfileStats();
 }
 
 // 退出登录

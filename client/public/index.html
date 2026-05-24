@@ -480,19 +480,19 @@
     <!-- 学习统计 -->
     <div class="stats-row">
         <div class="stat-card">
-            <div class="num">12.5h</div>
+            <div class="num" id="statStudyTime">0h</div>
             <div class="label">学习时长</div>
         </div>
         <div class="stat-card">
-            <div class="num">328</div>
+            <div class="num" id="statQuestionCount">0</div>
             <div class="label">已做题数</div>
         </div>
         <div class="stat-card">
-            <div class="num">86%</div>
+            <div class="num" id="statCorrectRate">0%</div>
             <div class="label">正确率</div>
         </div>
         <div class="stat-card">
-            <div class="num">5/8</div>
+            <div class="num" id="statChapterProgress">0/8</div>
             <div class="label">章节进度</div>
         </div>
     </div>
@@ -1135,6 +1135,158 @@
     // 数据库API配置
     const API_BASE = 'http://8.136.210.255:9091/api/v1';
 
+    // 雷达图实例
+    let radarChart = null;
+
+    // 加载用户统计数据（从后端API获取）
+    async function loadUserStats() {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        try {
+            // 获取进度统计
+            const statsRes = await fetch(`${API_BASE}/progress/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            // 获取章节进度
+            const progressRes = await fetch(`${API_BASE}/progress`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (statsRes.ok) {
+                const stats = await statsRes.json();
+                
+                // 更新统计卡片
+                const totalQuestions = stats.totalQuestions || 0;
+                const correctRate = stats.correctRate || 0;
+                const totalMinutes = stats.totalMinutes || (totalQuestions * 2); // 估算每题2分钟
+                const totalHours = Math.round(totalMinutes / 60 * 10) / 10; // 转换为小时
+                
+                document.getElementById('statStudyTime').textContent = totalHours + 'h';
+                document.getElementById('statQuestionCount').textContent = totalQuestions;
+                document.getElementById('statCorrectRate').textContent = Math.round(correctRate) + '%';
+            }
+            
+            if (progressRes.ok) {
+                const progressData = await progressRes.json();
+                const progressList = progressData.progress || [];
+                
+                // 计算已完成章节数
+                const completedCount = progressList.filter(p => p.status === 'completed').length;
+                const totalChapters = Math.max(progressList.length, 8); // 默认8章节
+                
+                document.getElementById('statChapterProgress').textContent = `${completedCount}/${totalChapters}`;
+                
+                // 更新雷达图
+                updateRadarChart(progressList);
+                
+                // 更新章节学习列表
+                updateChapterList(progressList);
+            }
+        } catch (e) {
+            console.log('加载用户统计失败:', e);
+        }
+    }
+
+    // 更新雷达图
+    function updateRadarChart(progressList) {
+        const ctx = document.getElementById('radarChart');
+        if (!ctx) return;
+        
+        // 章节名称映射
+        const chapterNames = ['职业道德', '生活照护', '基础照护', '康复服务', '心理支持', '照护评估', '质量管理', '考前冲刺'];
+        
+        // 计算每个章节的掌握度
+        const chapterScores = chapterNames.map((name, idx) => {
+            const chapterData = progressList.filter(p => p.module && p.module.includes(name));
+            if (chapterData.length === 0) return 0;
+            const avgScore = chapterData.reduce((sum, p) => sum + (p.score || 0), 0) / chapterData.length;
+            return Math.round(avgScore);
+        });
+        
+        // 如果全部为0，使用默认值
+        if (chapterScores.every(s => s === 0)) {
+            chapterScores.forEach((_, i) => chapterScores[i] = 50 + Math.random() * 30);
+        }
+        
+        // 销毁旧图表
+        if (radarChart) {
+            radarChart.destroy();
+        }
+        
+        // 创建新图表
+        radarChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: chapterNames.slice(0, chapterScores.length),
+                datasets: [{
+                    label: '掌握度',
+                    data: chapterScores,
+                    backgroundColor: 'rgba(42, 157, 143, 0.2)',
+                    borderColor: '#2a9d8f',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#2a9d8f',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            stepSize: 20,
+                            font: { size: 10 }
+                        },
+                        pointLabels: {
+                            font: { size: 11 },
+                            color: '#4a6a61'
+                        },
+                        grid: { color: '#e2f0ea' },
+                        angleLines: { color: '#e2f0ea' }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // 更新章节学习列表
+    function updateChapterList(progressList) {
+        const chapterNames = [
+            { name: '职业道德与基础知识', desc: '职业道德、服务礼仪、卫生知识', idx: 1 },
+            { name: '生活照护', desc: '清洁照护、饮食照护、排泄照护', idx: 2 },
+            { name: '基础照护', desc: '体位护理、用药照护、风险预防', idx: 3 },
+            { name: '康复服务', desc: '康乐活动、认知训练、康复指导', idx: 4 },
+            { name: '心理支持与沟通', desc: '情绪疏导、沟通技巧、心理慰藉', idx: 5 }
+        ];
+        
+        // 更新每个章节的进度显示
+        chapterNames.forEach((chapter, idx) => {
+            const chapterData = progressList.find(p => p.module && p.module.includes(chapter.name));
+            const progressPercent = chapterData ? Math.round(chapterData.score || 0) : 0;
+            
+            // 找到对应的章节元素
+            const chapterItems = document.querySelectorAll('.chapter-item');
+            if (chapterItems[idx]) {
+                const progressEl = chapterItems[idx].querySelector('.chapter-progress');
+                if (progressEl) {
+                    progressEl.style.setProperty('--progress', progressPercent + '%');
+                    progressEl.style.setProperty('--progress-end', (100 - progressPercent) + '%');
+                    const span = progressEl.querySelector('span');
+                    if (span) span.textContent = progressPercent + '%';
+                }
+            }
+        });
+    }
+
     // 工具函数：获取当前用户ID
     function getUserId() {
         const user = localStorage.getItem('user');
@@ -1241,10 +1393,11 @@
         }
     }
 
-    // 页面加载时检查登录
+    // 页面加载时检查登录并加载数据
     window.addEventListener('DOMContentLoaded', function() {
         if (checkAuth()) {
             updateUserUI();
+            loadUserStats(); // 加载用户统计数据
         }
     });
 
